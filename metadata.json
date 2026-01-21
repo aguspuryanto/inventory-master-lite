@@ -1,0 +1,7 @@
+{
+  "name": "InventoryMaster POS",
+  "description": "A high-end inventory management and point-of-sale system featuring real-time tracking, barcode support, and advanced dashboard analytics.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
