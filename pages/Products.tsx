@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { Product, Transaction } from '../types';
 import { formatCurrency, parseFormattedNumber, generateId } from '../utils';
+import { db } from '../services/db';
+import { supabase } from '../lib/supabase';
 
 interface ProductsProps {
   products: Product[];
@@ -64,7 +66,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
     setShowModal(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const productData: Product = {
       id: editingProduct ? editingProduct.id : generateId(),
@@ -77,49 +79,66 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
       category: formData.category
     };
 
-    if (editingProduct) {
-      // If stock increased manually, track as IN transaction
-      if (productData.stock > editingProduct.stock) {
-        const diff = productData.stock - editingProduct.stock;
-        onStockEntry({
-          id: generateId(),
-          date: new Date().toISOString(),
-          type: 'IN',
-          total: productData.purchasePrice * diff,
-          items: [{
-            productId: productData.id,
-            name: productData.name,
-            price: productData.purchasePrice,
-            quantity: diff,
-            subtotal: productData.purchasePrice * diff
-          }]
-        });
+    try {
+      if (editingProduct) {
+        // Save to DB
+        if (supabase) await db.updateProduct(productData);
+        
+        // If stock increased manually, track as IN transaction
+        if (productData.stock > editingProduct.stock) {
+          const diff = productData.stock - editingProduct.stock;
+          onStockEntry({
+            id: generateId(),
+            date: new Date().toISOString(),
+            type: 'IN',
+            total: productData.purchasePrice * diff,
+            items: [{
+              productId: productData.id,
+              name: productData.name,
+              price: productData.purchasePrice,
+              quantity: diff,
+              subtotal: productData.purchasePrice * diff
+            }]
+          });
+        }
+        setProducts(prev => prev.map(p => p.id === editingProduct.id ? productData : p));
+      } else {
+        // Save to DB
+        if (supabase) await db.addProduct(productData);
+        
+        setProducts(prev => [...prev, productData]);
+        if (productData.stock > 0) {
+          onStockEntry({
+            id: generateId(),
+            date: new Date().toISOString(),
+            type: 'IN',
+            total: productData.purchasePrice * productData.stock,
+            items: [{
+              productId: productData.id,
+              name: productData.name,
+              price: productData.purchasePrice,
+              quantity: productData.stock,
+              subtotal: productData.purchasePrice * productData.stock
+            }]
+          });
+        }
       }
-      setProducts(prev => prev.map(p => p.id === editingProduct.id ? productData : p));
-    } else {
-      setProducts(prev => [...prev, productData]);
-      if (productData.stock > 0) {
-        onStockEntry({
-          id: generateId(),
-          date: new Date().toISOString(),
-          type: 'IN',
-          total: productData.purchasePrice * productData.stock,
-          items: [{
-            productId: productData.id,
-            name: productData.name,
-            price: productData.purchasePrice,
-            quantity: productData.stock,
-            subtotal: productData.purchasePrice * productData.stock
-          }]
-        });
-      }
+      setShowModal(false);
+    } catch (error) {
+      console.error("Error saving product:", error);
+      alert("Gagal menyimpan barang ke database.");
     }
-    setShowModal(false);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Hapus barang ini?')) {
-      setProducts(prev => prev.filter(p => p.id !== id));
+      try {
+        if (supabase) await db.deleteProduct(id);
+        setProducts(prev => prev.filter(p => p.id !== id));
+      } catch (error) {
+        console.error("Error deleting product:", error);
+        alert("Gagal menghapus barang dari database.");
+      }
     }
   };
 

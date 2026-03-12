@@ -24,6 +24,8 @@ import Reports from './pages/Reports';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import { Product, Transaction } from './types';
+import { db } from './services/db';
+import { supabase } from './lib/supabase';
 
 // Initial Mock Data
 const INITIAL_PRODUCTS: Product[] = [
@@ -59,6 +61,28 @@ const App: React.FC = () => {
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSupabaseConfigured, setIsSupabaseConfigured] = useState(!!supabase);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      if (supabase) {
+        try {
+          const [dbProducts, dbTransactions] = await Promise.all([
+            db.getProducts(),
+            db.getTransactions()
+          ]);
+          setProducts(dbProducts.length > 0 ? dbProducts : INITIAL_PRODUCTS);
+          setTransactions(dbTransactions);
+        } catch (error) {
+          console.error("Error loading data from Supabase:", error);
+        }
+      }
+      setIsLoading(false);
+    };
+    
+    loadData();
+  }, []);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
     if (saved !== null) {
@@ -77,7 +101,8 @@ const App: React.FC = () => {
   }, [isDarkMode]);
 
   // Sync products with stock changes from transactions
-  const handleAddTransaction = (newTx: Transaction) => {
+  const handleAddTransaction = async (newTx: Transaction) => {
+    // Optimistic UI update
     setTransactions(prev => [newTx, ...prev]);
     setProducts(prevProducts => {
       return prevProducts.map(p => {
@@ -89,6 +114,16 @@ const App: React.FC = () => {
         return p;
       });
     });
+
+    // Save to DB
+    if (supabase) {
+      try {
+        await db.addTransaction(newTx);
+      } catch (error) {
+        console.error("Failed to save transaction to DB:", error);
+        alert("Gagal menyimpan transaksi ke database.");
+      }
+    }
   };
 
   const handleLogin = () => {
@@ -201,14 +236,30 @@ const App: React.FC = () => {
             </div>
           </header>
 
-          <div className="p-4 lg:p-8 flex-1 overflow-y-auto">
-            <Routes>
-              <Route path="/" element={<Dashboard products={products} transactions={transactions} />} />
-              <Route path="/products" element={<Products products={products} setProducts={setProducts} onStockEntry={(tx) => handleAddTransaction(tx)} />} />
-              <Route path="/pos" element={<POS products={products} onCheckout={handleAddTransaction} />} />
-              <Route path="/transactions" element={<Transactions transactions={transactions} />} />
-              <Route path="/reports" element={<Reports transactions={transactions} products={products} />} />
-            </Routes>
+          <div className="p-4 lg:p-8 flex-1 overflow-y-auto relative">
+            {!isSupabaseConfigured && (
+              <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-800 dark:text-amber-200 text-sm flex items-start gap-3">
+                <div className="mt-0.5">⚠️</div>
+                <div>
+                  <p className="font-bold mb-1">Database Supabase Belum Dikonfigurasi</p>
+                  <p>Aplikasi saat ini berjalan menggunakan data dummy di memori (perubahan akan hilang saat halaman direfresh). Untuk mengaktifkan penyimpanan permanen, tambahkan <code>VITE_SUPABASE_URL</code> dan <code>VITE_SUPABASE_ANON_KEY</code> di pengaturan Environment Variables.</p>
+                </div>
+              </div>
+            )}
+            
+            {isLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+              </div>
+            ) : (
+              <Routes>
+                <Route path="/" element={<Dashboard products={products} transactions={transactions} />} />
+                <Route path="/products" element={<Products products={products} setProducts={setProducts} onStockEntry={handleAddTransaction} />} />
+                <Route path="/pos" element={<POS products={products} onCheckout={handleAddTransaction} />} />
+                <Route path="/transactions" element={<Transactions transactions={transactions} />} />
+                <Route path="/reports" element={<Reports transactions={transactions} products={products} />} />
+              </Routes>
+            )}
           </div>
         </main>
       </div>
