@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Package, Mail, Lock, ArrowRight } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface LoginProps {
   onLogin: () => void;
@@ -10,19 +11,36 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
-    // Dummy authentication
-    if (email === 'admin@example.com' && password === 'admin1234') {
-      onLogin();
-      navigate('/');
+    if (supabase) {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setError(error.message);
+      } else {
+        navigate('/');
+      }
     } else {
-      setError('Email atau password salah. Gunakan admin@example.com / admin1234');
+      // Dummy authentication
+      if (email === 'admin@example.com' && password === 'admin1234') {
+        onLogin();
+        navigate('/');
+      } else {
+        setError('Email atau password salah. Gunakan admin@example.com / admin1234');
+      }
     }
+    
+    setIsLoading(false);
   };
 
   return (
@@ -82,10 +100,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
             <button 
               type="submit"
-              className="w-full bg-purple-600 text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-purple-700 shadow-lg shadow-purple-200 dark:shadow-none transition-all mt-8"
+              disabled={isLoading}
+              className="w-full bg-purple-600 text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-purple-700 shadow-lg shadow-purple-200 dark:shadow-none transition-all mt-8 disabled:opacity-70"
             >
-              Masuk Sekarang
-              <ArrowRight size={18} />
+              {isLoading ? 'Memproses...' : 'Masuk Sekarang'}
+              {!isLoading && <ArrowRight size={18} />}
             </button>
           </form>
 

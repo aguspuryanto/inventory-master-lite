@@ -26,6 +26,7 @@ import Register from './pages/Register';
 import { Product, Transaction } from './types';
 import { db } from './services/db';
 import { supabase } from './lib/supabase';
+import { Session } from '@supabase/supabase-js';
 
 // Initial Mock Data
 const INITIAL_PRODUCTS: Product[] = [
@@ -58,6 +59,8 @@ const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return localStorage.getItem('isAuthenticated') === 'true';
   });
+  const [session, setSession] = useState<Session | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -83,6 +86,26 @@ const App: React.FC = () => {
     
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (supabase) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+        setIsAuthLoading(false);
+      });
+
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_event, session) => {
+        setSession(session);
+      });
+
+      return () => subscription.unsubscribe();
+    } else {
+      setIsAuthLoading(false);
+    }
+  }, []);
+
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
     if (saved !== null) {
@@ -131,12 +154,26 @@ const App: React.FC = () => {
     localStorage.setItem('isAuthenticated', 'true');
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    localStorage.removeItem('isAuthenticated');
+  const handleLogout = async () => {
+    if (supabase) {
+      await supabase.auth.signOut();
+    } else {
+      setIsAuthenticated(false);
+      localStorage.removeItem('isAuthenticated');
+    }
   };
 
-  if (!isAuthenticated) {
+  const isUserLoggedIn = supabase ? !!session : isAuthenticated;
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      </div>
+    );
+  }
+
+  if (!isUserLoggedIn) {
     return (
       <HashRouter>
         <Routes>
@@ -190,8 +227,12 @@ const App: React.FC = () => {
                   <User size={20} className="text-slate-400 dark:text-slate-300" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Admin Utama</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Super Admin</p>
+                  <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                    {session?.user?.user_metadata?.name || session?.user?.email || 'Admin Utama'}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {session?.user ? 'Kasir / Admin' : 'Super Admin'}
+                  </p>
                 </div>
               </div>
               <button 

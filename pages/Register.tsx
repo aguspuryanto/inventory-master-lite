@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Package, Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 const Register: React.FC = () => {
   const [name, setName] = useState('');
@@ -8,9 +9,10 @@ const Register: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -19,9 +21,32 @@ const Register: React.FC = () => {
       return;
     }
 
-    // Dummy registration
-    alert('Pendaftaran berhasil! Silakan login dengan akun demo.');
-    navigate('/login');
+    setIsLoading(true);
+
+    if (supabase) {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+          }
+        }
+      });
+
+      if (error) {
+        setError(error.message);
+      } else {
+        alert('Pendaftaran berhasil! Silakan cek email Anda untuk verifikasi (jika diaktifkan), atau langsung login.');
+        navigate('/login');
+      }
+    } else {
+      // Dummy registration
+      alert('Pendaftaran berhasil! Silakan login dengan akun demo.');
+      navigate('/login');
+    }
+    
+    setIsLoading(false);
   };
 
   return (
@@ -108,10 +133,11 @@ const Register: React.FC = () => {
 
             <button 
               type="submit"
-              className="w-full bg-purple-600 text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-purple-700 shadow-lg shadow-purple-200 dark:shadow-none transition-all mt-8"
+              disabled={isLoading}
+              className="w-full bg-purple-600 text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-purple-700 shadow-lg shadow-purple-200 dark:shadow-none transition-all mt-8 disabled:opacity-70"
             >
-              Daftar Sekarang
-              <ArrowRight size={18} />
+              {isLoading ? 'Memproses...' : 'Daftar Sekarang'}
+              {!isLoading && <ArrowRight size={18} />}
             </button>
           </form>
 
