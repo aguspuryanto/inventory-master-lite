@@ -87,13 +87,13 @@ const POS: React.FC<POSProps> = ({ products, onCheckout }) => {
     }
 
     const newTx: Transaction = {
-      id: `INV-${Date.now().toString().slice(-6)}`,
-      date: new Date().toISOString(),
+      id: crypto.randomUUID(),
       type: 'OUT',
-      items: [...cart],
-      total,
-      paymentAmount: amount,
-      changeAmount: amount - total
+      mainCategory: 'Penjualan',
+      subCategory: 'POS',
+      amount: total,
+      createdAt: new Date().toISOString(),
+      description: `Transaksi POS - ${cart.length} item`
     };
 
     onCheckout(newTx);
