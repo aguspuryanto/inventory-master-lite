@@ -10,7 +10,9 @@ import {
   Menu, 
   X,
   Bell,
-  User
+  User,
+  Moon,
+  Sun
 } from 'lucide-react';
 
 import Dashboard from './pages/Dashboard';
@@ -37,8 +39,8 @@ const SidebarItem: React.FC<{ to: string, icon: React.ReactNode, label: string, 
       className={({ isActive }) => `
         flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200
         ${isActive 
-          ? 'bg-purple-600 text-white shadow-lg shadow-purple-200' 
-          : 'text-slate-500 hover:bg-purple-50 hover:text-purple-600'}
+          ? 'bg-purple-600 text-white shadow-lg shadow-purple-200 dark:shadow-none' 
+          : 'text-slate-500 dark:text-slate-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-600 dark:hover:text-purple-400'}
       `}
     >
       {icon}
@@ -51,6 +53,22 @@ const App: React.FC = () => {
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    if (saved !== null) {
+      return JSON.parse(saved);
+    }
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
+  }, [isDarkMode]);
 
   // Sync products with stock changes from transactions
   const handleAddTransaction = (newTx: Transaction) => {
@@ -69,7 +87,7 @@ const App: React.FC = () => {
 
   return (
     <HashRouter>
-      <div className="flex min-h-screen bg-slate-50">
+      <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
         {/* Mobile Sidebar Overlay */}
         {isSidebarOpen && (
           <div 
@@ -80,7 +98,7 @@ const App: React.FC = () => {
 
         {/* Sidebar */}
         <aside className={`
-          fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0
+          fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}>
           <div className="p-6">
@@ -102,14 +120,14 @@ const App: React.FC = () => {
             </nav>
           </div>
           
-          <div className="absolute bottom-0 w-full p-6 border-t border-slate-100">
+          <div className="absolute bottom-0 w-full p-6 border-t border-slate-100 dark:border-slate-700">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
-                <User size={20} className="text-slate-400" />
+              <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+                <User size={20} className="text-slate-400 dark:text-slate-300" />
               </div>
               <div>
-                <p className="text-sm font-bold text-slate-700">Admin Utama</p>
-                <p className="text-xs text-slate-500">Super Admin</p>
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Admin Utama</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Super Admin</p>
               </div>
             </div>
           </div>
@@ -118,23 +136,30 @@ const App: React.FC = () => {
         {/* Main Content */}
         <main className="flex-1 flex flex-col min-w-0">
           {/* Header */}
-          <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-4 bg-white border-b border-slate-200 lg:px-8">
+          <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 lg:px-8 transition-colors duration-200">
             <div className="flex items-center gap-4">
               <button 
                 onClick={() => setIsSidebarOpen(true)}
-                className="p-2 -ml-2 text-slate-500 rounded-lg hover:bg-slate-100 lg:hidden"
+                className="p-2 -ml-2 text-slate-500 dark:text-slate-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 lg:hidden"
               >
                 <Menu size={24} />
               </button>
-              <h2 className="text-lg font-bold text-slate-800 lg:text-xl">
+              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 lg:text-xl">
                 {/* Dynamic Title logic could go here */}
               </h2>
             </div>
             
             <div className="flex items-center gap-2">
-              <button className="p-2 text-slate-500 rounded-lg hover:bg-slate-100 relative">
+              <button 
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className="p-2 text-slate-500 dark:text-slate-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                aria-label="Toggle Dark Mode"
+              >
+                {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+              </button>
+              <button className="p-2 text-slate-500 dark:text-slate-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 relative">
                 <Bell size={20} />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-800"></span>
               </button>
             </div>
           </header>

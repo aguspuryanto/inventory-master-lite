@@ -133,17 +133,17 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Manajemen Barang</h1>
-          <p className="text-slate-500">Kelola master data produk dan stok inventaris</p>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Manajemen Barang</h1>
+          <p className="text-slate-500 dark:text-slate-400">Kelola master data produk dan stok inventaris</p>
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 bg-white rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+          <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
             <Download size={18} />
             Export
           </button>
           <button 
             onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700 shadow-lg shadow-purple-200 transition-all"
+            className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700 shadow-lg shadow-purple-200 dark:shadow-none transition-all"
           >
             <Plus size={18} />
             Tambah Barang
@@ -151,8 +151,8 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden transition-colors duration-200">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="relative w-full md:w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
@@ -160,14 +160,14 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
               placeholder="Cari nama, kode, atau barcode..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all dark:text-slate-100"
             />
           </div>
           <div className="flex items-center gap-3">
-            <button className="p-2 text-slate-500 hover:bg-white rounded-lg border border-transparent hover:border-slate-200">
+            <button className="p-2 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 rounded-lg border border-transparent hover:border-slate-200 dark:hover:border-slate-600">
               <Filter size={18} />
             </button>
-            <button className="p-2 text-slate-500 hover:bg-white rounded-lg border border-transparent hover:border-slate-200">
+            <button className="p-2 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 rounded-lg border border-transparent hover:border-slate-200 dark:hover:border-slate-600">
               <ArrowUpDown size={18} />
             </button>
           </div>
@@ -175,63 +175,63 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
 
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-slate-50/50 border-b border-slate-100">
+            <thead className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700">
               <tr>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Barang</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Barcode</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Harga Jual</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Stok</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Kategori</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Aksi</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Barang</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Barcode</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Harga Jual</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Stok</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Kategori</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
               {filteredProducts.map(p => (
-                <tr key={p.id} className="hover:bg-slate-50/80 transition-colors group">
+                <tr key={p.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/50 transition-colors group">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600 font-bold uppercase">
+                      <div className="w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 font-bold uppercase">
                         {p.name.charAt(0)}
                       </div>
                       <div>
-                        <p className="font-bold text-slate-700">{p.name}</p>
-                        <p className="text-xs text-slate-400 font-medium">{p.code}</p>
+                        <p className="font-bold text-slate-700 dark:text-slate-200">{p.name}</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">{p.code}</p>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 text-slate-500">
+                    <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                       <Barcode size={14} />
                       <span className="text-sm font-mono">{p.barcode || '-'}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <p className="text-sm font-bold text-slate-700">Rp {formatCurrency(p.sellingPrice)}</p>
-                    <p className="text-[10px] text-slate-400 uppercase tracking-tighter">Profit: Rp {formatCurrency(p.sellingPrice - p.purchasePrice)}</p>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Rp {formatCurrency(p.sellingPrice)}</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-tighter">Profit: Rp {formatCurrency(p.sellingPrice - p.purchasePrice)}</p>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                      p.stock <= 5 ? 'bg-rose-50 text-rose-600' : 
-                      p.stock <= 15 ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'
+                      p.stock <= 5 ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400' : 
+                      p.stock <= 15 ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
                     }`}>
                       {p.stock} pcs
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-slate-500 font-medium">
+                  <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400 font-medium">
                     {p.category}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
                         onClick={() => handleOpenModal(p)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                         title="Edit"
                       >
                         <Edit2 size={16} />
                       </button>
                       <button 
                         onClick={() => handleDelete(p.id)}
-                        className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                        className="p-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
                         title="Hapus"
                       >
                         <Trash2 size={16} />
@@ -244,8 +244,8 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
                 <tr>
                   <td colSpan={6} className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center gap-2">
-                      <Package className="text-slate-200" size={64} />
-                      <p className="text-slate-400 font-medium">Tidak ada barang yang ditemukan.</p>
+                      <Package className="text-slate-200 dark:text-slate-700" size={64} />
+                      <p className="text-slate-400 dark:text-slate-500 font-medium">Tidak ada barang yang ditemukan.</p>
                     </div>
                   </td>
                 </tr>
@@ -259,10 +259,10 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
       {showModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowModal(false)} />
-          <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="text-xl font-bold text-slate-800">{editingProduct ? 'Edit Barang' : 'Tambah Barang Baru'}</h3>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
+          <div className="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{editingProduct ? 'Edit Barang' : 'Tambah Barang Baru'}</h3>
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                 <X size={20} />
               </button>
             </div>
@@ -270,57 +270,57 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Kode Barang</label>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Kode Barang</label>
                   <input 
                     required 
                     value={formData.code} 
                     onChange={e => setFormData({...formData, code: e.target.value})}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none" 
+                    className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none" 
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Barcode</label>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Barcode</label>
                   <input 
                     value={formData.barcode} 
                     onChange={e => setFormData({...formData, barcode: e.target.value})}
                     placeholder="Scan atau ketik barcode..."
-                    className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none" 
+                    className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none" 
                   />
                 </div>
               </div>
               
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 uppercase">Nama Barang</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Nama Barang</label>
                 <input 
                   required 
                   value={formData.name} 
                   onChange={e => setFormData({...formData, name: e.target.value})}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none" 
+                  className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none" 
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Harga Beli</label>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Harga Beli</label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">Rp</span>
                     <input 
                       required 
                       value={formData.purchasePrice} 
                       onChange={e => setFormData({...formData, purchasePrice: formatCurrency(parseFormattedNumber(e.target.value))})}
-                      className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-right font-mono" 
+                      className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-right font-mono" 
                     />
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Harga Jual</label>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Harga Jual</label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">Rp</span>
                     <input 
                       required 
                       value={formData.sellingPrice} 
                       onChange={e => setFormData({...formData, sellingPrice: formatCurrency(parseFormattedNumber(e.target.value))})}
-                      className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-right font-mono" 
+                      className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-right font-mono" 
                     />
                   </div>
                 </div>
@@ -328,21 +328,21 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Stok</label>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Stok</label>
                   <input 
                     type="number"
                     required 
                     value={formData.stock} 
                     onChange={e => setFormData({...formData, stock: e.target.value})}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-right font-mono" 
+                    className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-right font-mono" 
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase">Kategori</label>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Kategori</label>
                   <select 
                     value={formData.category} 
                     onChange={e => setFormData({...formData, category: e.target.value})}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"
+                    className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"
                   >
                     <option value="">Pilih Kategori</option>
                     <option value="Food">Food</option>
@@ -357,13 +357,13 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
                 <button 
                   type="button" 
                   onClick={() => setShowModal(false)}
-                  className="flex-1 py-3 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+                  className="flex-1 py-3 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                 >
                   Batal
                 </button>
                 <button 
                   type="submit" 
-                  className="flex-[2] py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 shadow-lg shadow-purple-100 transition-all"
+                  className="flex-[2] py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 shadow-lg shadow-purple-100 dark:shadow-none transition-all"
                 >
                   Simpan Barang
                 </button>
