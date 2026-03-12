@@ -166,21 +166,36 @@ const POS: React.FC<POSProps> = ({ products, onCheckout }) => {
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-[300px]">
           {cart.map(item => (
-            <div key={item.productId} className="bg-slate-50 dark:bg-slate-700/50 rounded-2xl p-3 space-y-3">
-              <div className="flex justify-between items-start">
-                <h5 className="font-bold text-slate-700 dark:text-slate-200 text-sm">{item.name}</h5>
-                <button onClick={() => updateQuantity(item.productId, -item.quantity)} className="text-rose-400 hover:text-rose-600 dark:hover:text-rose-300">
-                  <X size={16} />
+            <div key={item.productId} className="bg-white dark:bg-slate-800/80 rounded-2xl p-4 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col gap-3 group relative transition-all hover:shadow-md">
+              <div className="flex justify-between items-start gap-2">
+                <div className="flex-1">
+                  <h5 className="font-bold text-slate-800 dark:text-slate-100 text-sm leading-tight mb-1">{item.name}</h5>
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Rp {formatCurrency(item.price)} / item</p>
+                </div>
+                <button 
+                  onClick={() => updateQuantity(item.productId, -item.quantity)} 
+                  className="text-slate-300 hover:text-rose-500 dark:text-slate-500 dark:hover:text-rose-400 transition-colors p-1"
+                  title="Hapus dari keranjang"
+                >
+                  <X size={18} />
                 </button>
               </div>
-              <div className="flex items-center justify-between">
-                <p className="text-purple-600 dark:text-purple-400 font-bold text-sm">Rp {formatCurrency(item.price)}</p>
-                <div className="flex items-center gap-3 bg-white dark:bg-slate-800 px-2 py-1 rounded-xl shadow-sm border border-slate-100 dark:border-slate-600">
-                  <button onClick={() => updateQuantity(item.productId, -1)} className="p-1 hover:bg-slate-50 dark:hover:bg-slate-700 rounded text-slate-400 dark:text-slate-300">
+              
+              <div className="flex items-center justify-between pt-3 border-t border-slate-50 dark:border-slate-700/50">
+                <p className="text-purple-600 dark:text-purple-400 font-black text-sm">Rp {formatCurrency(item.subtotal)}</p>
+                
+                <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-900/50 p-1 rounded-xl border border-slate-100 dark:border-slate-700">
+                  <button 
+                    onClick={() => updateQuantity(item.productId, -1)} 
+                    className="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300 shadow-sm transition-colors"
+                  >
                     <Minus size={14} />
                   </button>
-                  <span className="text-sm font-bold w-4 text-center dark:text-slate-100">{item.quantity}</span>
-                  <button onClick={() => updateQuantity(item.productId, 1)} className="p-1 hover:bg-slate-50 dark:hover:bg-slate-700 rounded text-slate-400 dark:text-slate-300">
+                  <span className="text-sm font-bold w-8 text-center text-slate-800 dark:text-slate-100">{item.quantity}</span>
+                  <button 
+                    onClick={() => updateQuantity(item.productId, 1)} 
+                    className="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300 shadow-sm transition-colors"
+                  >
                     <Plus size={14} />
                   </button>
                 </div>

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { HashRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
+import { HashRouter, Routes, Route, NavLink, useLocation, Navigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Package, 
@@ -12,7 +12,8 @@ import {
   Bell,
   User,
   Moon,
-  Sun
+  Sun,
+  LogOut
 } from 'lucide-react';
 
 import Dashboard from './pages/Dashboard';
@@ -20,6 +21,8 @@ import Products from './pages/Products';
 import POS from './pages/POS';
 import Transactions from './pages/Transactions';
 import Reports from './pages/Reports';
+import Login from './pages/Login';
+import Register from './pages/Register';
 import { Product, Transaction } from './types';
 
 // Initial Mock Data
@@ -50,6 +53,9 @@ const SidebarItem: React.FC<{ to: string, icon: React.ReactNode, label: string, 
 };
 
 const App: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('isAuthenticated') === 'true';
+  });
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -84,6 +90,28 @@ const App: React.FC = () => {
       });
     });
   };
+
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+    localStorage.setItem('isAuthenticated', 'true');
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('isAuthenticated');
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <HashRouter>
+        <Routes>
+          <Route path="/login" element={<Login onLogin={handleLogin} />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </HashRouter>
+    );
+  }
 
   return (
     <HashRouter>
@@ -121,14 +149,23 @@ const App: React.FC = () => {
           </div>
           
           <div className="absolute bottom-0 w-full p-6 border-t border-slate-100 dark:border-slate-700">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
-                <User size={20} className="text-slate-400 dark:text-slate-300" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+                  <User size={20} className="text-slate-400 dark:text-slate-300" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Admin Utama</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Super Admin</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Admin Utama</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Super Admin</p>
-              </div>
+              <button 
+                onClick={handleLogout}
+                className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
+                title="Keluar"
+              >
+                <LogOut size={20} />
+              </button>
             </div>
           </div>
         </aside>
