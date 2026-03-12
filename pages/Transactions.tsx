@@ -8,7 +8,9 @@ import {
   ArrowDownCircle, 
   Eye,
   FileDown,
-  History
+  History,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { Transaction } from '../types';
 import { formatCurrency, formatDate } from '../utils';
@@ -20,6 +22,11 @@ interface TransactionsProps {
 const Transactions: React.FC<TransactionsProps> = ({ transactions }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'ALL' | 'IN' | 'OUT'>('ALL');
+  const [expandedTxId, setExpandedTxId] = useState<string | null>(null);
+
+  const toggleExpand = (id: string) => {
+    setExpandedTxId(prev => prev === id ? null : id);
+  };
 
   const filtered = transactions.filter(t => {
     const matchesSearch = t.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -115,34 +122,76 @@ const Transactions: React.FC<TransactionsProps> = ({ transactions }) => {
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
               {filtered.map(t => (
-                <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/50 transition-colors group">
-                  <td className="px-6 py-4">
-                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{formatDate(t.date)}</p>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 font-mono">#{t.id}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
-                      t.type === 'IN' ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
-                    }`}>
-                      {t.type === 'IN' ? <ArrowDownCircle size={14} /> : <ArrowUpCircle size={14} />}
-                      {t.type === 'IN' ? 'Pembelian' : 'Penjualan'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 max-w-xs">
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
-                      {t.items?.map(i => `${i.name} (${i.quantity}x)`).join(', ') || '-'}
-                    </p>
-                    <p className="text-xs text-slate-400 dark:text-slate-500">{t.items?.length || 0} item unik</p>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Rp {formatCurrency(t.total)}</p>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="p-2 text-slate-400 dark:text-slate-500 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-all opacity-0 group-hover:opacity-100">
-                      <Eye size={18} />
-                    </button>
-                  </td>
-                </tr>
+                <React.Fragment key={t.id}>
+                  <tr 
+                    onClick={() => toggleExpand(t.id)}
+                    className={`hover:bg-slate-50/80 dark:hover:bg-slate-700/50 transition-colors group cursor-pointer ${expandedTxId === t.id ? 'bg-slate-50/80 dark:bg-slate-700/50' : ''}`}
+                  >
+                    <td className="px-6 py-4">
+                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{formatDate(t.date)}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 font-mono">#{t.id}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                        t.type === 'IN' ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
+                      }`}>
+                        {t.type === 'IN' ? <ArrowDownCircle size={14} /> : <ArrowUpCircle size={14} />}
+                        {t.type === 'IN' ? 'Pembelian' : 'Penjualan'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 max-w-xs">
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+                        {t.items?.map(i => `${i.name} (${i.quantity}x)`).join(', ') || '-'}
+                      </p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">{t.items?.length || 0} item unik</p>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Rp {formatCurrency(t.total)}</p>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button className="p-2 text-slate-400 dark:text-slate-500 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-all">
+                        {expandedTxId === t.id ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                      </button>
+                    </td>
+                  </tr>
+                  {expandedTxId === t.id && (
+                    <tr className="bg-slate-50/30 dark:bg-slate-800/30">
+                      <td colSpan={5} className="px-6 py-4">
+                        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-700 p-4 shadow-sm">
+                          <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-3">Rincian Item</h4>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                              <thead className="text-xs text-slate-500 dark:text-slate-400 uppercase border-b border-slate-100 dark:border-slate-700">
+                                <tr>
+                                  <th className="pb-2 font-semibold">Nama Barang</th>
+                                  <th className="pb-2 font-semibold text-right">Harga</th>
+                                  <th className="pb-2 font-semibold text-center">Qty</th>
+                                  <th className="pb-2 font-semibold text-right">Subtotal</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+                                {t.items?.map((item, idx) => (
+                                  <tr key={idx}>
+                                    <td className="py-2 text-slate-700 dark:text-slate-300">{item.name}</td>
+                                    <td className="py-2 text-right text-slate-600 dark:text-slate-400">Rp {formatCurrency(item.price)}</td>
+                                    <td className="py-2 text-center text-slate-600 dark:text-slate-400">{item.quantity}</td>
+                                    <td className="py-2 text-right font-medium text-slate-800 dark:text-slate-200">Rp {formatCurrency(item.subtotal)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                              <tfoot className="border-t border-slate-100 dark:border-slate-700">
+                                <tr>
+                                  <td colSpan={3} className="pt-2 text-right font-bold text-slate-600 dark:text-slate-400">Total Transaksi:</td>
+                                  <td className="pt-2 text-right font-bold text-slate-800 dark:text-slate-100">Rp {formatCurrency(t.total)}</td>
+                                </tr>
+                              </tfoot>
+                            </table>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))}
               {filtered.length === 0 && (
                 <tr>
