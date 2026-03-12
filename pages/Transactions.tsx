@@ -7,7 +7,8 @@ import {
   ArrowUpCircle, 
   ArrowDownCircle, 
   Eye,
-  FileDown
+  FileDown,
+  History
 } from 'lucide-react';
 import { Transaction } from '../types';
 import { formatCurrency, formatDate } from '../utils';
@@ -22,7 +23,7 @@ const Transactions: React.FC<TransactionsProps> = ({ transactions }) => {
 
   const filtered = transactions.filter(t => {
     const matchesSearch = t.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.items.some(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
+      t.items?.some(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesType = filterType === 'ALL' || t.type === filterType;
     return matchesSearch && matchesType;
   });
@@ -51,19 +52,19 @@ const Transactions: React.FC<TransactionsProps> = ({ transactions }) => {
           </div>
         </div>
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
-            <ArrowUpCircle size={24} />
+          <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center">
+            <ArrowDownCircle size={24} />
           </div>
           <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Masuk</p>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Pembelian</p>
             <p className="text-xl font-bold text-slate-800">
               Rp {formatCurrency(transactions.filter(t => t.type === 'IN').reduce((acc, t) => acc + t.total, 0))}
             </p>
           </div>
         </div>
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center">
-            <ArrowDownCircle size={24} />
+          <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
+            <ArrowUpCircle size={24} />
           </div>
           <div>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Penjualan</p>
@@ -121,17 +122,17 @@ const Transactions: React.FC<TransactionsProps> = ({ transactions }) => {
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
-                      t.type === 'IN' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
+                      t.type === 'IN' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'
                     }`}>
-                      {t.type === 'IN' ? <ArrowUpCircle size={14} /> : <ArrowDownCircle size={14} />}
-                      {t.type === 'IN' ? 'Masuk' : 'Keluar'}
+                      {t.type === 'IN' ? <ArrowDownCircle size={14} /> : <ArrowUpCircle size={14} />}
+                      {t.type === 'IN' ? 'Pembelian' : 'Penjualan'}
                     </span>
                   </td>
                   <td className="px-6 py-4 max-w-xs">
                     <p className="text-sm font-medium text-slate-700 truncate">
-                      {t.items.map(i => `${i.name} (${i.quantity}x)`).join(', ')}
+                      {t.items?.map(i => `${i.name} (${i.quantity}x)`).join(', ') || '-'}
                     </p>
-                    <p className="text-xs text-slate-400">{t.items.length} item unik</p>
+                    <p className="text-xs text-slate-400">{t.items?.length || 0} item unik</p>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <p className="text-sm font-bold text-slate-800">Rp {formatCurrency(t.total)}</p>
