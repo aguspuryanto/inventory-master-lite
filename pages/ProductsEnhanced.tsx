@@ -119,7 +119,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
       
       // Upload to Supabase Storage
       const { error, data } = await supabase.storage
-        .from('product-images')
+        .from('bucket_kasirku')
         .upload(`public/${Date.now()}-${file.name}`, file, { 
           upsert: true,
           cacheControl: '3600'
@@ -129,7 +129,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('product-images')
+        .from('bucket_kasirku')
         .getPublicUrl(data.path);
 
       setImagePreview(publicUrl);
@@ -536,7 +536,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-end gap-1 opacity-100 transition-opacity">
                         <button 
                           onClick={() => handleOpenModal(product)}
                           className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
@@ -692,6 +692,10 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
                     required
                   />
                 </div>
+              </div>
+              
+              {/* Image Upload Section - Separate Grid */}
+              <div className="grid grid-cols-1 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Gambar Produk
