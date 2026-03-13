@@ -329,7 +329,7 @@ const POS: React.FC<POSProps> = ({ products, onCheckout }) => {
               <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Printer size={32} />
               </div>
-              <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 uppercase">InvMaster POS</h2>
+              <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 uppercase">KasirKu POS</h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">Gedung Sudirman Lantai 4, Jakarta</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">Telp: (021) 12345678</p>
             </div>

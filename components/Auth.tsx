@@ -126,7 +126,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
             </div>
           </div>
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-            {isSignUp ? 'Buat Akun Baru' : 'Masuk ke InvMaster'}
+            {isSignUp ? 'Buat Akun Baru' : 'Masuk ke KasirKu'}
           </h2>
           <p className="mt-2 text-center text-sm text-slate-600 dark:text-slate-400">
             {isSignUp 
@@ -256,7 +256,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
         </div>
 
         <div className="mt-8 text-center text-xs text-slate-500 dark:text-slate-400">
-          <p>&copy; 2024 InvMaster. Semua hak dilindungi.</p>
+          <p>&copy; 2026 KasirKu. Semua hak dilindungi.</p>
         </div>
       </div>
     </div>
