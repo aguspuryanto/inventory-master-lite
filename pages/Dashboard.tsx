@@ -73,11 +73,11 @@ const Dashboard: React.FC<DashboardProps> = ({ products, transactions }) => {
     
     const incoming = transactions
       .filter(t => t.type === 'IN')
-      .reduce((acc, t) => acc + t.items.reduce((sum, item) => sum + item.quantity, 0), 0);
+      .reduce((acc, t) => acc + t.amount, 0);
       
     const outgoing = transactions
       .filter(t => t.type === 'OUT')
-      .reduce((acc, t) => acc + t.items.reduce((sum, item) => sum + item.quantity, 0), 0);
+      .reduce((acc, t) => acc + t.amount, 0);
 
     return { totalStock, lowStockCount, incoming, outgoing };
   }, [products, transactions]);
@@ -86,7 +86,7 @@ const Dashboard: React.FC<DashboardProps> = ({ products, transactions }) => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
     return months.map((month, index) => {
       const filtered = transactions.filter(t => {
-        const d = new Date(t.date);
+        const d = new Date(t.createdAt);
         return d.getMonth() === index && d.getFullYear() === selectedYear;
       });
       
@@ -94,10 +94,10 @@ const Dashboard: React.FC<DashboardProps> = ({ products, transactions }) => {
         month,
         incoming: filtered
           .filter(t => t.type === 'IN')
-          .reduce((acc, t) => acc + t.items.reduce((sum, i) => sum + i.quantity, 0), 0),
+          .reduce((acc, t) => acc + t.amount, 0),
         outgoing: filtered
           .filter(t => t.type === 'OUT')
-          .reduce((acc, t) => acc + t.items.reduce((sum, i) => sum + i.quantity, 0), 0)
+          .reduce((acc, t) => acc + t.amount, 0)
       };
     });
   }, [transactions, selectedYear]);

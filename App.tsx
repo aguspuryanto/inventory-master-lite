@@ -24,122 +24,12 @@ import Reports from './pages/Reports';
 import Auth from './components/Auth';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import { Product, Transaction } from './types';
+import { Product, Transaction, TransactionItem } from './types';
 import { db } from './services/db';
 import { supabase } from './lib/supabase';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { ToastProvider } from './components/toast';
 
-// Initial Mock Data
-const INITIAL_PRODUCTS: Product[] = [
-  { id: crypto.randomUUID(), code: 'PRD001', name: 'Premium Arabica Coffee', barcode: '899123456001', purchasePrice: 45000, sellingPrice: 65000, stock: 45, category: 'Beverage', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-  { id: crypto.randomUUID(), code: 'PRD002', name: 'Silk Road Tea', barcode: '899123456002', purchasePrice: 20000, sellingPrice: 35000, stock: 12, category: 'Beverage', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-  { id: crypto.randomUUID(), code: 'PRD003', name: 'Organic Honey 500ml', barcode: '899123456003', purchasePrice: 75000, sellingPrice: 98000, stock: 5, category: 'Food', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-  { id: crypto.randomUUID(), code: 'PRD004', name: 'Dark Chocolate Bar', barcode: '899123456004', purchasePrice: 15000, sellingPrice: 25000, stock: 120, category: 'Food', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-  { id: crypto.randomUUID(), code: 'PRD005', name: 'Artisan Sourdough', barcode: '899123456005', purchasePrice: 18000, sellingPrice: 32000, stock: 2, category: 'Food', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-];
-
-// Function to initialize products in Supabase
-const initializeProducts = async (force = false) => {
-  if (!supabase) {
-    console.log(' Supabase client is null');
-    return;
-  }
-  
-  // console.log(' Starting initializeProducts, force:', force);
-  
-  try {
-    // Test connection first
-    // console.log(' Testing Supabase connection...');
-    const { data: testData, error: testError } = await supabase
-      .from('products')
-      .select('count')
-      .limit(1);
-    
-    if (testError) {
-      console.error(' Connection test failed:', testError);
-      console.error(' Test error details:', JSON.stringify(testError, null, 2));
-      return;
-    }
-    
-    // console.log(' Supabase connection OK, count query worked');
-    
-    // Check if products already exist (unless forced)
-    // console.log(' Checking existing products...');
-    const { data: existingProducts, error: fetchError } = await supabase
-      .from('products')
-      .select('id, code, name');
-    
-    if (fetchError) {
-      // console.error(' Error checking existing products:', fetchError);
-      // console.error(' Fetch error details:', JSON.stringify(fetchError, null, 2));
-      
-      // Check if it's RLS issue
-      if (fetchError.code === 'PGRST116') {
-        console.log(' This might be an RLS (Row Level Security) issue');
-        console.log(' Check your RLS policies in Supabase Dashboard');
-      }
-      return;
-    }
-    
-    // console.log(' Raw existingProducts data:', existingProducts);
-    // console.log(' Existing products found:', existingProducts?.length || 0);
-    
-    // If products already exist and not forced, don't insert
-    if (!force && existingProducts && existingProducts.length > 0) {
-      // console.log(' Products already initialized, found:', existingProducts.length);
-      return;
-    }
-    
-    // If forced, delete existing products first
-    if (force && existingProducts && existingProducts.length > 0) {
-      // console.log(' Force re-initializing: deleting existing products...');
-      // console.log('Force re-initializing: deleting existing products...');
-      const { error: deleteError } = await supabase
-        .from('products')
-        .delete()
-        .neq('id', existingProducts.map(p => p.id));
-      
-      if (deleteError) {
-        console.error('Error deleting existing products:', deleteError);
-        console.error('Delete error details:', JSON.stringify(deleteError, null, 2));
-        return;
-      }
-    }
-    
-    // console.log('Initializing products with data:', INITIAL_PRODUCTS.length);
-    
-    // Prepare products with correct field mapping
-    const productsToInsert = INITIAL_PRODUCTS.map(p => ({
-      id: p.id,
-      code: p.code,
-      name: p.name,
-      barcode: p.barcode,
-      purchase_price: p.purchasePrice,
-      selling_price: p.sellingPrice,
-      stock: p.stock,
-      category: p.category,
-      image_url: p.image_url || ''
-    }));
-    
-    // Insert initial products
-    const { data, error } = await supabase
-      .from('products')
-      .insert(productsToInsert)
-      .select();
-    
-    if (error) {
-      console.error('Error inserting products:', error);
-      console.error('Insert error details:', JSON.stringify(error, null, 2));
-    } else {
-      console.log('Products initialized successfully:', data?.length || 0);
-      console.log('Inserted products:', data?.map(p => ({ id: p.id, code: p.code, name: p.name })));
-    }
-  } catch (err) {
-    console.error('Error initializing products:', err);
-    console.error('Init error details:', JSON.stringify(err, null, 2));
-  }
-};
 
 const SidebarItem: React.FC<{ to: string, icon: React.ReactNode, label: string, onClick?: () => void }> = ({ to, icon, label, onClick }) => {
   return (
@@ -165,53 +55,39 @@ const App: React.FC = () => {
   });
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transaction_items, setTransactionItems] = useState<TransactionItem[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSupabaseConfigured, setIsSupabaseConfigured] = useState(!!supabase);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Memoize initial data to prevent unnecessary re-renders
-  const initialData = useMemo(() => ({
-    products: INITIAL_PRODUCTS,
-    transactions: []
-  }), []);
 
   const loadData = useMemo(() => async () => {
     if (supabase) {
       try {
-        // Initialize products first
-        await initializeProducts();
-        
         const [dbProducts, dbTransactions] = await Promise.all([
           db.getProducts(),
           db.getTransactions()
         ]);
         
-        // Always use data from Supabase if available
         setProducts(dbProducts);
         setTransactions(dbTransactions);
         
-        // Log data source for debugging
-        console.log('Products loaded from Supabase:', dbProducts.length);
-        // console.log('Transactions loaded from Supabase:', dbTransactions.length);
+        // console.log('Products loaded from Supabase:', dbProducts.length);
       } catch (error) {
         console.error("Error loading data from Supabase:", error);
         console.error("Error details:", JSON.stringify(error, null, 2));
         
-        // Fallback to initial data if Supabase fails
-        setProducts(initialData.products);
-        setTransactions(initialData.transactions);
-        console.log('Fallback to initial products:', initialData.products.length);
+        setProducts([]);
+        setTransactions([]);
       }
     } else {
-      // Use initial data when Supabase is not configured
-      setProducts(initialData.products);
-      setTransactions(initialData.transactions);
-      console.log('Using initial products (no Supabase):', initialData.products.length);
+      setProducts([]);
+      setTransactions([]);
     }
     setIsLoading(false);
-  }, [initialData]);
+  }, []);
 
   useEffect(() => {
     loadData();
@@ -254,18 +130,20 @@ const App: React.FC = () => {
   }, [isDarkMode]);
 
   // Sync products with stock changes from transactions
-  const handleAddTransaction = async (newTx: Transaction) => {
+  const handleAddTransaction = async (newTx: Transaction, cart: TransactionItem[]) => {
     // Optimistic UI update
     setTransactions(prev => [newTx, ...prev]);
     
     // Note: With the new transaction structure, stock updates are handled
     // differently since transactions don't contain item details
     // You may need to implement separate stock management logic
+    // console.log(newTx);
+    // console.log(cart);
 
     // Save to DB
     if (supabase) {
       try {
-        await db.addTransaction(newTx);
+        await db.addTransaction(newTx, cart);
       } catch (error) {
         console.error("Failed to save transaction to DB:", error);
         alert("Gagal menyimpan transaksi ke database.");

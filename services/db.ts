@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { Product, Transaction } from '../types';
+import { Product, Transaction, ProductVariant, TransactionItem } from '../types';
 
 export const db = {
   // Products
@@ -92,6 +92,89 @@ export const db = {
     if (error) throw error;
   },
 
+  // Product Variants
+  async getProductVariants(productId: string): Promise<ProductVariant[]> {
+    if (!supabase) return [];
+    
+    const { data, error } = await supabase
+      .from('product_variants')
+      .select('*')
+      .eq('product_id', productId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching product variants:', error);
+      return [];
+    }
+    
+    return data.map(v => ({
+      id: v.id,
+      id_product: v.id_product,
+      name: v.name,
+      createdAt: v.created_at,
+      updatedAt: v.updated_at
+    }));
+  },
+
+  async addProductVariant(variant: Omit<ProductVariant, 'id' | 'createdAt' | 'updatedAt'>): Promise<ProductVariant> {
+    if (!supabase) throw new Error('Supabase not configured');
+    
+    const { data, error } = await supabase
+      .from('product_variants')
+      .insert({
+        id: crypto.randomUUID(),
+        id_product: variant.id_product,
+        name: variant.name
+      })
+      .select()
+      .single();
+      
+    if (error) throw error;
+    
+    return {
+      id: data.id,
+      id_product: data.id_product,
+      name: data.name,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
+  },
+
+  async updateProductVariant(variant: ProductVariant): Promise<ProductVariant> {
+    if (!supabase) throw new Error('Supabase not configured');
+    
+    const { data, error } = await supabase
+      .from('product_variants')
+      .update({
+        id_product: variant.id_product,
+        name: variant.name
+      })
+      .eq('id', variant.id)
+      .select()
+      .single();
+      
+    if (error) throw error;
+    
+    return {
+      id: data.id,
+      id_product: data.id_product,
+      name: data.name,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
+  },
+
+  async deleteProductVariant(id: string): Promise<void> {
+    if (!supabase) return;
+    
+    const { error } = await supabase
+      .from('product_variants')
+      .delete()
+      .eq('id', id);
+      
+    if (error) throw error;
+  },
+
   // Transactions
   async getTransactions(): Promise<Transaction[]> {
     if (!supabase) return [];
@@ -109,6 +192,27 @@ export const db = {
     
     // console.log('Raw transactions data from Supabase:', data);
     // console.log('Transactions count:', data?.length || 0);
+
+    // join with transaction_items
+    // Fetch transaction items to join with transactions
+    const { data: items, error: itemsError } = await supabase
+      .from('transaction_items')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (itemsError) {
+      console.error('Error fetching transaction items:', itemsError);
+    }
+    
+    // Create a map of transaction_id to items for quick lookup
+    const itemsMap = new Map<string, TransactionItem[]>();
+    items?.forEach(item => {
+      const transactionId = item.transaction_id;
+      if (!itemsMap.has(transactionId)) {
+        itemsMap.set(transactionId, []);
+      }
+      itemsMap.get(transactionId)?.push(item);
+    });
     
     return data.map(t => ({
       id: t.id,
@@ -117,11 +221,12 @@ export const db = {
       subCategory: t.sub_category,
       amount: Number(t.amount),
       createdAt: t.created_at,
-      description: t.description || ''
+      description: t.description || '',
+      items: itemsMap.get(t.id) || []
     }));
   },
 
-  async addTransaction(tx: Transaction) {
+  async addTransaction(tx: Transaction, items: TransactionItem[]) {
     if (!supabase) return;
     
     const { error } = await supabase
@@ -137,5 +242,23 @@ export const db = {
       });
       
     if (error) throw error;
+    
+    // Insert transaction items
+    if (items && items.length > 0) {
+      const itemsData = items.map(item => ({
+        transaction_id: tx.id,
+        product_id: item.productId,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        subtotal: item.subtotal
+      }));
+      
+      const { error: itemsError } = await supabase
+        .from('transaction_items')
+        .insert(itemsData);
+      
+      if (itemsError) throw itemsError;
+    }
   }
 };

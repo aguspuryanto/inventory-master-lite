@@ -13,18 +13,17 @@ import {
   X,
   Wifi,
   WifiOff,
-  RefreshCw,
-  Database,
   HardDrive,
   Image as ImageIcon
 } from 'lucide-react';
-import { Product, Transaction } from '../types';
+import { Product, ProductVariant, Transaction } from '../types';
 import { formatCurrency, parseFormattedNumber, generateId } from '../utils';
 import { db } from '../services/db';
 import { supabase } from '../lib/supabase';
 import { LocalStorageService } from '../services/local-storage';
 import { useOnlineStatus } from '../hooks/use-online-status';
 import { useToast } from '../components/toast';
+import { SyncButtons } from '../components/SyncButtons';
 
 interface ProductsProps {
   products: Product[];
@@ -53,6 +52,91 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
   });
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imagePreview, setImagePreview] = useState<string>('');
+  const [showImportPreview, setShowImportPreview] = useState(false);
+  const [importPreviewData, setImportPreviewData] = useState<{ products: Product[], variants: ProductVariant[] } | null>(null);
+
+  const handleImport = async (file: File) => {
+    try {
+      const importResult = await LocalStorageService.importFromCSV(file);
+      console.log('Import result:', importResult);
+      
+      // Set preview data and show modal
+      setImportPreviewData(importResult);
+      setShowImportPreview(true);
+    } catch (error: any) {
+      addToast({
+        type: 'error',
+        title: 'Import gagal',
+        message: error.message
+      });
+    }
+  };
+
+  const handleConfirmImport = async () => {
+    if (!importPreviewData) return;
+    
+    // setProducts(importPreviewData.products);
+    // LocalStorageService.saveProducts(importPreviewData.products);
+
+    // TODO: Save products to database
+    const savedProducts: Product[] = [];
+    for (const product of importPreviewData.products) {
+      const savedProduct = await db.addProduct(product);
+      savedProducts.push(savedProduct);
+    }
+    
+    // TODO: Save variants to database if needed
+    if (importPreviewData.variants.length > 0) {
+      console.log('Imported variants:', importPreviewData.variants);
+      
+      // Map original product IDs to saved product IDs
+      const idMapping = new Map<string, string>();
+      importPreviewData.products.forEach((original, index) => {
+        idMapping.set(original.id, savedProducts[index].id);
+      });
+      
+      // Update variants with new product IDs and save to database
+      for (const variant of importPreviewData.variants) {
+        const newProductId = idMapping.get(variant.id_product);
+        if (newProductId) {
+          await db.addProductVariant({
+            ...variant,
+            id_product: newProductId
+          });
+        }
+      }
+    }
+    
+    // Update products state with saved products
+    setProducts(savedProducts);
+    
+    addToast({
+      type: 'success',
+      title: 'Import berhasil',
+      message: `${importPreviewData.products.length} produk${importPreviewData.variants.length > 0 ? ` dan ${importPreviewData.variants.length} varian` : ''} berhasil diimpor`
+    });
+    
+    // Close modal and reset data
+    setShowImportPreview(false);
+    setImportPreviewData(null);
+  };
+
+  const handleExport = () => {
+    try {
+      LocalStorageService.exportToCSV(products);
+      addToast({
+        type: 'success',
+        title: 'Export berhasil',
+        message: `${products.length} produk berhasil diekspor`
+      });
+    } catch (error: any) {
+      addToast({
+        type: 'error',
+        title: 'Export gagal',
+        message: error.message
+      });
+    }
+  };
 
   // Real-time subscription
   useEffect(() => {
@@ -274,6 +358,8 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
           <div>
             <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Manajemen Produk</h1>
             <p className="text-slate-500 dark:text-slate-400">Kelola master data produk dan stok inventaris</p>
+          </div>
+          <div className="flex gap-2 flex-wrap">
             <div className="flex items-center gap-2 mt-2">
               <button
                 onClick={() => setIsOnlineMode(!isOnlineMode)}
@@ -295,11 +381,9 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
                 </span>
               )}
             </div>
-          </div>
-          <div className="flex gap-2 flex-wrap">
             {/* Export/Import */}
             <button 
-              onClick={() => LocalStorageService.exportToJSON(products)}
+              onClick={handleExport}
               className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
             >
               <Download size={18} />
@@ -310,27 +394,11 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
               Import
               <input
                 type="file"
-                accept=".json"
+                accept=".csv"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
-                  LocalStorageService.importFromJSON(file)
-                    .then(importedProducts => {
-                      setProducts(importedProducts);
-                      LocalStorageService.saveProducts(importedProducts);
-                      addToast({
-                        type: 'success',
-                        title: 'Import berhasil',
-                        message: `${importedProducts.length} produk berhasil diimpor`
-                      });
-                    })
-                    .catch(error => {
-                      addToast({
-                        type: 'error',
-                        title: 'Import gagal',
-                        message: error.message
-                      });
-                    });
+                  handleImport(file);
                   e.target.value = '';
                 }}
                 className="hidden"
@@ -338,79 +406,14 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
             </label>
 
             {/* Sync buttons */}
-            {onlineStatus.isSupabaseAvailable && (
-              <>
-                {!isOnlineMode && (
-                  <button 
-                    onClick={async () => {
-                      setIsSyncing(true);
-                      setSyncStatus('Sinkronisasi...');
-                      try {
-                        const localProducts = LocalStorageService.loadProducts();
-                        for (const product of localProducts) {
-                          await db.addProduct(product);
-                        }
-                        const freshProducts = await db.getProducts();
-                        setProducts(freshProducts);
-                        addToast({
-                          type: 'success',
-                          title: 'Sinkronisasi berhasil',
-                          message: `${localProducts.length} produk berhasil disinkronkan`
-                        });
-                      } catch (error) {
-                        console.error('Sync error:', error);
-                        addToast({
-                          type: 'error',
-                          title: 'Sinkronisasi gagal',
-                          message: 'Terjadi kesalahan saat menyinkronkan data'
-                        });
-                      } finally {
-                        setIsSyncing(false);
-                        setSyncStatus('');
-                      }
-                    }}
-                    disabled={isSyncing}
-                    className="flex items-center gap-2 px-4 py-2 border border-purple-200 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/30 rounded-xl text-sm font-semibold text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors disabled:opacity-50"
-                  >
-                    <Database size={18} />
-                    {isSyncing ? 'Menyinkron...' : 'Sync ke Server'}
-                  </button>
-                )}
-                {isOnlineMode && (
-                  <button 
-                    onClick={async () => {
-                      setIsSyncing(true);
-                      setSyncStatus('Mengunduh data...');
-                      try {
-                        const onlineProducts = await db.getProducts();
-                        setProducts(onlineProducts);
-                        LocalStorageService.saveProducts(onlineProducts);
-                        addToast({
-                          type: 'success',
-                          title: 'Data berhasil diunduh',
-                          message: `${onlineProducts.length} produk berhasil diunduh dari server`
-                        });
-                      } catch (error) {
-                        console.error('Download error:', error);
-                        addToast({
-                          type: 'error',
-                          title: 'Pengunduhan gagal',
-                          message: 'Terjadi kesalahan saat mengunduh data dari server'
-                        });
-                      } finally {
-                        setIsSyncing(false);
-                        setSyncStatus('');
-                      }
-                    }}
-                    disabled={isSyncing}
-                    className="flex items-center gap-2 px-4 py-2 border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 rounded-xl text-sm font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors disabled:opacity-50"
-                  >
-                    <RefreshCw size={18} />
-                    {isSyncing ? 'Mengunduh...' : 'Refresh dari Server'}
-                  </button>
-                )}
-              </>
-            )}
+            {/* <SyncButtons
+              onlineStatus={onlineStatus}
+              isOnlineMode={isOnlineMode}
+              isSyncing={isSyncing}
+              setIsSyncing={setIsSyncing}
+              setSyncStatus={setSyncStatus}
+              setProducts={setProducts}
+            /> */}
 
             {/* Add product button */}
             <button 
@@ -462,9 +465,6 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
                     Gambar
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Kode
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Nama Produk
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -492,28 +492,32 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
                         <img 
                           src={product.image_url} 
                           alt={product.name}
-                          className="h-12 w-12 rounded-lg object-cover"
+                          className="h-16 w-16 rounded-lg object-cover"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
                           }}
                         />
                       ) : (
-                        <div className="h-12 w-12 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+                        <div className="h-16 w-16 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
                           <ImageIcon size={20} className="text-slate-400 dark:text-slate-500" />
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
-                        {product.code}
-                      </span>
-                    </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                        {product.name}
+                      <div className="space-y-2">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                              {product.name}
+                            </div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                              Kode: {product.code}
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
                       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                         product.stock <= 5 
                           ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
@@ -758,6 +762,112 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Import Preview Modal */}
+      {showImportPreview && importPreviewData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-4xl max-h-[80vh] overflow-hidden">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                  Preview Import Data
+                </h2>
+                <button
+                  onClick={() => setShowImportPreview(false)}
+                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                  Produk ({importPreviewData.products.length})
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-200 dark:border-slate-700">
+                        <th className="text-left p-3 font-medium text-slate-700 dark:text-slate-300">Kode</th>
+                        <th className="text-left p-3 font-medium text-slate-700 dark:text-slate-300">Nama</th>
+                        <th className="text-left p-3 font-medium text-slate-700 dark:text-slate-300">Kategori</th>
+                        <th className="text-left p-3 font-medium text-slate-700 dark:text-slate-300">Stok</th>
+                        <th className="text-left p-3 font-medium text-slate-700 dark:text-slate-300">Harga Jual</th>
+                        <th className="text-left p-3 font-medium text-slate-700 dark:text-slate-300">Varian</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {importPreviewData.products.map((product, index) => (
+                        <tr key={index} className="border-b border-slate-100 dark:border-slate-700">
+                          <td className="p-3 text-slate-900 dark:text-slate-100">{product.code}</td>
+                          <td className="p-3 text-slate-900 dark:text-slate-100">{product.name}</td>
+                          <td className="p-3 text-slate-900 dark:text-slate-100">{product.category}</td>
+                          <td className="p-3 text-slate-900 dark:text-slate-100">{product.stock}</td>
+                          <td className="p-3 text-slate-900 dark:text-slate-100">{formatCurrency(product.sellingPrice)}</td>
+                          <td className="p-3">
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              product.hasVariants 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                                : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300'
+                            }`}>
+                              {product.hasVariants ? 'Ya' : 'Tidak'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* {importPreviewData.variants.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                    Varian ({importPreviewData.variants.length})
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-200 dark:border-slate-700">
+                          <th className="text-left p-3 font-medium text-slate-700 dark:text-slate-300">Nama Varian</th>
+                          <th className="text-left p-3 font-medium text-slate-700 dark:text-slate-300">Produk ID</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {importPreviewData.variants.map((variant, index) => (
+                          <tr key={index} className="border-b border-slate-100 dark:border-slate-700">
+                            <td className="p-3 text-slate-900 dark:text-slate-100">{variant.name}</td>
+                            <td className="p-3 text-slate-500 dark:text-slate-400 text-sm">{variant.id_product}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )} */}
+            </div>
+
+            <div className="p-6 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowImportPreview(false)}
+                  className="px-6 py-3 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleConfirmImport}
+                  className="px-6 py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-colors"
+                >
+                  Konfirmasi Import
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

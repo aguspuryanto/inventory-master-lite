@@ -16,7 +16,7 @@ import {
   // Added Package icon
   Package
 } from 'lucide-react';
-import { Product, Transaction, TransactionItem } from '../types';
+import { Product, Transaction, TransactionItem, Receipt } from '../types';
 import { formatCurrency, generateId } from '../utils';
 
 interface POSProps {
@@ -29,7 +29,7 @@ const POS: React.FC<POSProps> = ({ products, onCheckout }) => {
   const [cart, setCart] = useState<TransactionItem[]>([]);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('0');
-  const [showReceipt, setShowReceipt] = useState<Transaction | null>(null);
+  const [showReceipt, setShowReceipt] = useState<Receipt | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const filteredProducts = products.filter(p => 
@@ -95,12 +95,23 @@ const POS: React.FC<POSProps> = ({ products, onCheckout }) => {
       createdAt: new Date().toISOString(),
       description: `Transaksi POS - ${cart.length} item`
     };
+    // console.log(newTx);
 
-    onCheckout(newTx);
+    const receipt: Receipt = {
+      id: newTx.id,
+      date: newTx.createdAt,
+      items: [...cart],
+      total: total,
+      paymentAmount: amount,
+      changeAmount: amount - total
+    };
+    // console.log(cart);
+
+    onCheckout(newTx, cart);
     setCart([]);
     setIsCheckoutOpen(false);
     setPaymentAmount('0');
-    setShowReceipt(newTx);
+    setShowReceipt(receipt);
   };
 
   return (

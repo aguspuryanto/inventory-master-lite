@@ -1,4 +1,12 @@
 
+export interface ProductVariant {
+  id: string;
+  id_product: string;  // UUID type but kept as string in TypeScript
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Product {
   id: string;
   code: string;
@@ -9,6 +17,7 @@ export interface Product {
   stock: number;
   category: string;
   image_url?: string;
+  hasVariants?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -31,10 +40,20 @@ export interface Transaction {
   amount: number;
   createdAt: string;
   description: string;
+  items?: TransactionItem[];
 }
 
 export interface MonthlyStats {
   month: string;
   incoming: number;
   outgoing: number;
+}
+
+export interface Receipt {
+  id: string;
+  date: string;
+  items: TransactionItem[];
+  total: number;
+  paymentAmount: number;
+  changeAmount: number;
 }
