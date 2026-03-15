@@ -6,7 +6,8 @@ import {
   Package, 
   ShoppingCart, 
   History, 
-  FileText, 
+  FileText,
+  Settings,
   Menu, 
   X,
   Bell,
@@ -21,6 +22,8 @@ import Products from './pages/ProductsEnhanced';
 import POS from './pages/POS';
 import Transactions from './pages/Transactions';
 import Reports from './pages/Reports';
+import SettingsPage from './pages/Settings';
+
 import Auth from './components/Auth';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -219,6 +222,7 @@ const App: React.FC = () => {
                 <SidebarItem to="/pos" icon={<ShoppingCart size={20} />} label="Kasir" onClick={() => setIsSidebarOpen(false)} />
                 <SidebarItem to="/transactions" icon={<History size={20} />} label="Transaksi" onClick={() => setIsSidebarOpen(false)} />
                 <SidebarItem to="/reports" icon={<FileText size={20} />} label="Laporan" onClick={() => setIsSidebarOpen(false)} />
+                <SidebarItem to="/settings" icon={<Settings size={20} />} label="Pengaturan" onClick={() => setIsSidebarOpen(false)} />
               </nav>
             </div>
             
@@ -302,6 +306,7 @@ const App: React.FC = () => {
                   <Route path="/pos" element={<POS products={products} onCheckout={handleAddTransaction} />} />
                   <Route path="/transactions" element={<Transactions transactions={transactions} />} />
                   <Route path="/reports" element={<Reports transactions={transactions} products={products} />} />
+                  <Route path="/settings" element={<SettingsPage />} />
                 </Routes>
               )}
             </div>

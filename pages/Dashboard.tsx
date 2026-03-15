@@ -147,15 +147,15 @@ const Dashboard: React.FC<DashboardProps> = ({ products, transactions }) => {
           color="bg-purple-50 dark:bg-purple-900/30"
           trend={{ type: 'up', value: '+12%' }}
         />
-        <KPICard 
+        {/* <KPICard 
           title="Barang Masuk" 
           value={formatCurrency(stats.incoming)} 
           icon={<TrendingUp className="text-blue-600 dark:text-blue-400" />} 
           color="bg-blue-50 dark:bg-blue-900/30"
           subtitle="Total periode ini"
-        />
+        /> */}
         <KPICard 
-          title="Barang Keluar" 
+          title="Penjualan" 
           value={formatCurrency(stats.outgoing)} 
           icon={<TrendingDown className="text-rose-600 dark:text-rose-400" />} 
           color="bg-rose-50 dark:bg-rose-900/30"
