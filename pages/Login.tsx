@@ -19,28 +19,18 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setError('');
     setIsLoading(true);
 
-    console.log('=== LOGIN DEBUG ===');
-    console.log('Supabase client:', supabase);
-    console.log('Email:', email);
-    console.log('Password:', password);
-
     if (supabase) {
-      console.log('Attempting Supabase authentication...');
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      console.log('Supabase response:', { data, error });
-      console.log('Error details:', error?.message, error?.status);
+
       if (error) {
         setError(error.message);
       } else {
-        console.log('Login successful!');
-        onLogin();
         navigate('/');
       }
     } else {
-      console.log('Using dummy authentication...');
       // Dummy authentication
       if (email === 'admin@example.com' && password === 'admin1234') {
         onLogin();
@@ -51,34 +41,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     }
     
     setIsLoading(false);
-  };
-
-  const createTestUser = async () => {
-    if (supabase) {
-      // Create user in Supabase Auth system (not custom table)
-      const { data, error } = await supabase.auth.signUp({
-        email: 'admin@example.com',
-        password: 'admin1234',
-        options: {
-          emailRedirectTo: undefined, // Disable email redirect for development
-          data: {
-            name: 'Admin Utama' // Store name in auth.users metadata
-          }
-        }
-      });
-      console.log('Create user response:', { data, error });
-      if (error) {
-        if (error.message.includes('rate limit')) {
-          alert('Rate limit exceeded. Wait a few minutes or create the user manually in Supabase dashboard.');
-        } else if (error.message.includes('already registered')) {
-          alert('User already exists in Supabase Auth! Try logging in directly.');
-        } else {
-          alert('Error creating user: ' + error.message);
-        }
-      } else {
-        alert('User created successfully in Supabase Auth! Check email for confirmation or try logging in.');
-      }
-    }
   };
 
   return (
@@ -93,7 +55,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Selamat Datang Kembali</h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm">Masuk ke akun KasirKu Anda</p>
+            <p className="text-slate-500 dark:text-slate-400 text-sm">Masuk ke akun InvMaster Anda</p>
           </div>
 
           {error && (
@@ -149,14 +111,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-8">
             Belum punya akun? <Link to="/register" className="font-bold text-purple-600 dark:text-purple-400 hover:text-purple-700">Daftar di sini</Link>
           </p>
-
-          {/* <button 
-            type="button"
-            onClick={createTestUser}
-            className="w-full mt-4 bg-slate-600 text-white py-2 rounded-lg text-sm hover:bg-slate-700 transition-all"
-          >
-            Create Test User (admin@example.com)
-          </button> */}
         </div>
         
         {/* Demo Hint */}

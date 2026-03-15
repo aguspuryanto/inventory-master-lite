@@ -8,9 +8,6 @@ export interface Product {
   sellingPrice: number;
   stock: number;
   category: string;
-  image_url?: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface TransactionItem {
@@ -25,12 +22,13 @@ export type TransactionType = 'IN' | 'OUT';
 
 export interface Transaction {
   id: string;
+  date: string;
   type: TransactionType;
-  mainCategory: string;
-  subCategory: string;
-  amount: number;
-  createdAt: string;
-  description: string;
+  items: TransactionItem[];
+  total: number;
+  paymentAmount?: number;
+  changeAmount?: number;
+  note?: string;
 }
 
 export interface MonthlyStats {

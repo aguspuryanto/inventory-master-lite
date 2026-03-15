@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Plus, 
   Search, 
@@ -10,21 +10,14 @@ import {
   ArrowUpDown,
   Download,
   Upload,
+  // Added Package and X icons
   Package,
-  X,
-  Wifi,
-  WifiOff,
-  RefreshCw,
-  Database,
-  HardDrive
+  X
 } from 'lucide-react';
 import { Product, Transaction } from '../types';
 import { formatCurrency, parseFormattedNumber, generateId } from '../utils';
 import { db } from '../services/db';
 import { supabase } from '../lib/supabase';
-import { LocalStorageService } from '../services/local-storage';
-import { useOnlineStatus } from '../hooks/use-online-status';
-import { useToast } from '../components/toast';
 
 interface ProductsProps {
   products: Product[];
@@ -36,11 +29,6 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [isOnlineMode, setIsOnlineMode] = useState(true);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<string>('');
-  const onlineStatus = useOnlineStatus();
-  const { addToast } = useToast();
   const [formData, setFormData] = useState({
     code: '',
     name: '',
@@ -88,255 +76,71 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
       purchasePrice: parseFormattedNumber(formData.purchasePrice),
       sellingPrice: parseFormattedNumber(formData.sellingPrice),
       stock: parseInt(formData.stock),
-      category: formData.category,
-      image_url: '', // Default empty string
-      createdAt: editingProduct?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      category: formData.category
     };
 
     try {
       if (editingProduct) {
-        // Update existing product
-        if (isOnlineMode && supabase) {
-          try {
-            await db.updateProduct(productData);
-          } catch (dbError) {
-            console.error('Database update error:', dbError);
-            addToast({
-              type: 'error',
-              title: 'Gagal update di database',
-              message: dbError instanceof Error ? dbError.message : 'Terjadi kesalahan saat update produk di Supabase'
-            });
-            return;
-          }
-        }
-        
-        setProducts(prev => prev.map(p => p.id === editingProduct.id ? productData : p));
+        // Save to DB
+        if (supabase) await db.updateProduct(productData);
         
         // If stock increased manually, track as IN transaction
         if (productData.stock > editingProduct.stock) {
           const diff = productData.stock - editingProduct.stock;
           onStockEntry({
             id: generateId(),
+            date: new Date().toISOString(),
             type: 'IN',
-            mainCategory: 'Stok Masuk Manual',
-            subCategory: 'Penyesuaian',
-            amount: diff,
-            createdAt: new Date().toISOString(),
-            description: `Penyesuaian stok ${productData.name}`
+            total: productData.purchasePrice * diff,
+            items: [{
+              productId: productData.id,
+              name: productData.name,
+              price: productData.purchasePrice,
+              quantity: diff,
+              subtotal: productData.purchasePrice * diff
+            }]
           });
         }
-        
-        addToast({
-          type: 'success',
-          title: 'Produk berhasil diperbarui',
-          message: `${productData.name} telah diupdate`
-        });
+        setProducts(prev => prev.map(p => p.id === editingProduct.id ? productData : p));
       } else {
-        // Add new product
-        if (isOnlineMode && supabase) {
-          try {
-            await db.addProduct(productData);
-          } catch (dbError) {
-            console.error('Database add error:', dbError);
-            addToast({
-              type: 'error',
-              title: 'Gagal simpan di database',
-              message: dbError instanceof Error ? dbError.message : 'Terjadi kesalahan saat simpan produk di Supabase'
-            });
-            return;
-          }
-        }
+        // Save to DB
+        if (supabase) await db.addProduct(productData);
         
         setProducts(prev => [...prev, productData]);
-        
-        // Track initial stock as IN transaction if > 0
         if (productData.stock > 0) {
           onStockEntry({
             id: generateId(),
+            date: new Date().toISOString(),
             type: 'IN',
-            mainCategory: 'Stok Awal',
-            subCategory: 'Produk Baru',
-            amount: productData.stock,
-            createdAt: new Date().toISOString(),
-            description: `Stok awal ${productData.name}`
+            total: productData.purchasePrice * productData.stock,
+            items: [{
+              productId: productData.id,
+              name: productData.name,
+              price: productData.purchasePrice,
+              quantity: productData.stock,
+              subtotal: productData.purchasePrice * productData.stock
+            }]
           });
         }
-        
-        addToast({
-          type: 'success',
-          title: 'Produk berhasil ditambahkan',
-          message: `${productData.name} telah ditambahkan`
-        });
       }
-      
-      // Save to local storage
-      const updatedProducts = editingProduct 
-        ? products.map(p => p.id === editingProduct.id ? productData : p)
-        : [...products, productData];
-      LocalStorageService.saveProducts(updatedProducts);
-      
       setShowModal(false);
     } catch (error) {
       console.error("Error saving product:", error);
-      addToast({
-        type: 'error',
-        title: 'Gagal menyimpan barang',
-        message: error instanceof Error ? error.message : 'Terjadi kesalahan saat menyimpan data produk'
-      });
+      alert("Gagal menyimpan barang ke database.");
     }
   };
 
   const handleDelete = async (id: string) => {
     if (confirm('Hapus barang ini?')) {
       try {
-        if (isOnlineMode && supabase) {
-          await db.deleteProduct(id);
-        }
+        if (supabase) await db.deleteProduct(id);
         setProducts(prev => prev.filter(p => p.id !== id));
-        
-        // Save to local storage
-        const updatedProducts = products.filter(p => p.id !== id);
-        LocalStorageService.saveProducts(updatedProducts);
-        
-        addToast({
-          type: 'success',
-          title: 'Berhasil menghapus barang',
-          message: 'Produk telah dihapus dari sistem'
-        });
       } catch (error) {
         console.error("Error deleting product:", error);
-        addToast({
-          type: 'error',
-          title: 'Gagal menghapus barang',
-          message: 'Terjadi kesalahan saat menghapus data produk'
-        });
+        alert("Gagal menghapus barang dari database.");
       }
     }
   };
-
-  // Sync functions
-  const syncToSupabase = async () => {
-    if (!onlineStatus.isSupabaseAvailable) {
-      addToast({
-        type: 'error',
-        title: 'Tidak ada koneksi',
-        message: 'Tidak dapat terhubung ke Supabase'
-      });
-      return;
-    }
-
-    setIsSyncing(true);
-    setSyncStatus('Sinkronisasi...');
-
-    try {
-      const localProducts = LocalStorageService.loadProducts();
-      
-      for (const product of localProducts) {
-        await db.addProduct(product);
-      }
-
-      // Refresh products from Supabase
-      const freshProducts = await db.getProducts();
-      setProducts(freshProducts);
-      
-      addToast({
-        type: 'success',
-        title: 'Sinkronisasi berhasil',
-        message: `${localProducts.length} produk berhasil disinkronkan`
-      });
-    } catch (error) {
-      console.error('Sync error:', error);
-      addToast({
-        type: 'error',
-        title: 'Sinkronisasi gagal',
-        message: 'Terjadi kesalahan saat menyinkronkan data'
-      });
-    } finally {
-      setIsSyncing(false);
-      setSyncStatus('');
-    }
-  };
-
-  const syncFromSupabase = async () => {
-    if (!onlineStatus.isSupabaseAvailable) {
-      addToast({
-        type: 'error',
-        title: 'Tidak ada koneksi',
-        message: 'Tidak dapat terhubung ke Supabase'
-      });
-      return;
-    }
-
-    setIsSyncing(true);
-    setSyncStatus('Mengunduh data...');
-
-    try {
-      const onlineProducts = await db.getProducts();
-      setProducts(onlineProducts);
-      LocalStorageService.saveProducts(onlineProducts);
-      
-      addToast({
-        type: 'success',
-        title: 'Data berhasil diunduh',
-        message: `${onlineProducts.length} produk berhasil diunduh dari server`
-      });
-    } catch (error) {
-      console.error('Download error:', error);
-      addToast({
-        type: 'error',
-        title: 'Pengunduhan gagal',
-        message: 'Terjadi kesalahan saat mengunduh data dari server'
-      });
-    } finally {
-      setIsSyncing(false);
-      setSyncStatus('');
-    }
-  };
-
-  const exportToJSON = () => {
-    LocalStorageService.exportToJSON(products);
-  };
-
-  const importFromJSON = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    LocalStorageService.importFromJSON(file)
-      .then(importedProducts => {
-        setProducts(importedProducts);
-        LocalStorageService.saveProducts(importedProducts);
-        alert(`Berhasil mengimpor ${importedProducts.length} produk`);
-      })
-      .catch(error => {
-        alert(error.message);
-      });
-
-    // Reset file input
-    event.target.value = '';
-  };
-
-  const toggleMode = () => {
-    if (!isOnlineMode && onlineStatus.isSupabaseAvailable) {
-      // Switching to online mode - sync from Supabase
-      syncFromSupabase();
-    }
-    setIsOnlineMode(!isOnlineMode);
-  };
-
-  // Initialize data based on mode
-  useEffect(() => {
-    if (isOnlineMode && onlineStatus.isSupabaseAvailable) {
-      // Online mode: load from Supabase
-      db.getProducts().then(setProducts).catch(console.error);
-    } else {
-      // Offline mode: load from local storage
-      const localProducts = LocalStorageService.loadProducts();
-      if (localProducts.length > 0) {
-        setProducts(localProducts);
-      }
-    }
-  }, [isOnlineMode, onlineStatus.isSupabaseAvailable]);
 
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -348,90 +152,14 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Manajemen Produk</h1>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Manajemen Barang</h1>
           <p className="text-slate-500 dark:text-slate-400">Kelola master data produk dan stok inventaris</p>
-          <div className="flex items-center gap-2 mt-2">
-            <button
-              onClick={toggleMode}
-              className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                isOnlineMode 
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' 
-                  : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-              }`}
-            >
-              {isOnlineMode ? <Wifi size={14} /> : <WifiOff size={14} />}
-              {isOnlineMode ? 'Online' : 'Offline'}
-            </button>
-            {!onlineStatus.isSupabaseAvailable && (
-              <span className="text-xs text-rose-500 dark:text-rose-400">No Connection</span>
-            )}
-            {syncStatus && (
-              <span className="text-xs text-purple-600 dark:text-purple-400 animate-pulse">
-                {syncStatus}
-              </span>
-            )}
-          </div>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          {/* Export/Import */}
-          <button 
-            onClick={exportToJSON}
-            className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-          >
+        <div className="flex gap-2">
+          <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
             <Download size={18} />
             Export
           </button>
-          <label className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer">
-            <Upload size={18} />
-            Import
-            <input
-              type="file"
-              accept=".json"
-              onChange={importFromJSON}
-              className="hidden"
-            />
-          </label>
-
-          {/* Sync buttons */}
-          {onlineStatus.isSupabaseAvailable && (
-            <>
-              {!isOnlineMode && (
-                <button 
-                  onClick={syncToSupabase}
-                  disabled={isSyncing}
-                  className="flex items-center gap-2 px-4 py-2 border border-purple-200 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/30 rounded-xl text-sm font-semibold text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors disabled:opacity-50"
-                >
-                  <Database size={18} />
-                  {isSyncing ? 'Menyinkron...' : 'Sync ke Server'}
-                </button>
-              )}
-              {isOnlineMode && (
-                <button 
-                  onClick={syncFromSupabase}
-                  disabled={isSyncing}
-                  className="flex items-center gap-2 px-4 py-2 border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 rounded-xl text-sm font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors disabled:opacity-50"
-                >
-                  <RefreshCw size={18} />
-                  {isSyncing ? 'Mengunduh...' : 'Refresh dari Server'}
-                </button>
-              )}
-              
-              {/* Force Initialize Button */}
-              <button 
-                onClick={() => {
-                  if (confirm('Apakah Anda yakin ingin me-reset semua data produk ke data awal? Data yang ada akan dihapus.')) {
-                    window.location.reload();
-                  }
-                }}
-                className="flex items-center gap-2 px-4 py-2 border border-rose-200 dark:border-rose-700 bg-rose-50 dark:bg-rose-900/30 rounded-xl text-sm font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors"
-              >
-                <HardDrive size={18} />
-                Reset Data Awal
-              </button>
-            </>
-          )}
-
-          {/* Add product button */}
           <button 
             onClick={() => handleOpenModal()}
             className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700 shadow-lg shadow-purple-200 dark:shadow-none transition-all"
@@ -512,7 +240,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
                     {p.category}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1">
+                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
                         onClick={() => handleOpenModal(p)}
                         className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"

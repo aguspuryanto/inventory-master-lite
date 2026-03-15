@@ -11,7 +11,7 @@ export const parseFormattedNumber = (value: string): number => {
   return Number(value.replace(/[^0-9]/g, ''));
 };
 
-export const generateId = () => crypto.randomUUID();
+export const generateId = () => Math.random().toString(36).substr(2, 9).toUpperCase();
 
 export const formatDate = (date: string | Date) => {
   return new Intl.DateTimeFormat('id-ID', {

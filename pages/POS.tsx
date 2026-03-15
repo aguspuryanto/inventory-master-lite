@@ -87,13 +87,13 @@ const POS: React.FC<POSProps> = ({ products, onCheckout }) => {
     }
 
     const newTx: Transaction = {
-      id: crypto.randomUUID(),
+      id: `INV-${Date.now().toString().slice(-6)}`,
+      date: new Date().toISOString(),
       type: 'OUT',
-      mainCategory: 'Penjualan',
-      subCategory: 'POS',
-      amount: total,
-      createdAt: new Date().toISOString(),
-      description: `Transaksi POS - ${cart.length} item`
+      items: [...cart],
+      total,
+      paymentAmount: amount,
+      changeAmount: amount - total
     };
 
     onCheckout(newTx);
@@ -130,19 +130,8 @@ const POS: React.FC<POSProps> = ({ products, onCheckout }) => {
               onClick={() => addToCart(p)}
               className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-purple-200 dark:hover:border-purple-500/50 transition-all text-left flex flex-col h-full group"
             >
-              <div className="w-full aspect-square rounded-xl bg-slate-50 dark:bg-slate-700/50 flex items-center justify-center mb-3 group-hover:bg-purple-50 dark:group-hover:bg-purple-900/30 transition-colors overflow-hidden">
-                {p.image_url ? (
-                  <img 
-                    src={p.image_url} 
-                    alt={p.name}
-                    className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-200"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                    }}
-                  />
-                ) : null}
-                <Package className={`text-slate-300 dark:text-slate-500 group-hover:text-purple-300 dark:group-hover:text-purple-400 ${p.image_url ? 'hidden' : ''}`} size={32} />
+              <div className="w-full aspect-square rounded-xl bg-slate-50 dark:bg-slate-700/50 flex items-center justify-center mb-3 group-hover:bg-purple-50 dark:group-hover:bg-purple-900/30 transition-colors">
+                <Package className="text-slate-300 dark:text-slate-500 group-hover:text-purple-300 dark:group-hover:text-purple-400" size={32} />
               </div>
               <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm leading-tight mb-1">{p.name}</h4>
               <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">{p.category}</p>
@@ -329,7 +318,7 @@ const POS: React.FC<POSProps> = ({ products, onCheckout }) => {
               <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Printer size={32} />
               </div>
-              <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 uppercase">KasirKu POS</h2>
+              <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 uppercase">InvMaster POS</h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">Gedung Sudirman Lantai 4, Jakarta</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">Telp: (021) 12345678</p>
             </div>

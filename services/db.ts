@@ -13,12 +13,8 @@ export const db = {
     
     if (error) {
       console.error('Error fetching products:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
       return [];
     }
-    
-    // console.log('Raw products data from Supabase:', data);
-    // console.log('Products count:', data?.length || 0);
     
     return data.map(p => ({
       id: p.id,
@@ -28,10 +24,7 @@ export const db = {
       purchasePrice: Number(p.purchase_price),
       sellingPrice: Number(p.selling_price),
       stock: Number(p.stock),
-      category: p.category || '',
-      image_url: p.image_url || '',
-      createdAt: p.created_at,
-      updatedAt: p.updated_at
+      category: p.category || ''
     }));
   },
 
@@ -48,8 +41,7 @@ export const db = {
         purchase_price: product.purchasePrice,
         selling_price: product.sellingPrice,
         stock: product.stock,
-        category: product.category,
-        image_url: product.image_url || ''
+        category: product.category
       })
       .select()
       .single();
@@ -70,8 +62,7 @@ export const db = {
         purchase_price: product.purchasePrice,
         selling_price: product.sellingPrice,
         stock: product.stock,
-        category: product.category,
-        image_url: product.image_url || ''
+        category: product.category
       })
       .eq('id', product.id)
       .select()
@@ -98,44 +89,90 @@ export const db = {
     
     const { data, error } = await supabase
       .from('transactions')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select(`
+        *,
+        transaction_items (*)
+      `)
+      .order('date', { ascending: false });
       
     if (error) {
       console.error('Error fetching transactions:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
       return [];
     }
     
-    // console.log('Raw transactions data from Supabase:', data);
-    // console.log('Transactions count:', data?.length || 0);
-    
     return data.map(t => ({
       id: t.id,
-      type: t.type,
-      mainCategory: t.main_category,
-      subCategory: t.sub_category,
-      amount: Number(t.amount),
-      createdAt: t.created_at,
-      description: t.description || ''
+      date: t.date,
+      type: t.type as 'IN' | 'OUT',
+      total: Number(t.total),
+      paymentAmount: t.payment_amount ? Number(t.payment_amount) : undefined,
+      changeAmount: t.change_amount ? Number(t.change_amount) : undefined,
+      note: t.note,
+      items: t.transaction_items.map((i: any) => ({
+        productId: i.product_id,
+        name: i.name,
+        price: Number(i.price),
+        quantity: Number(i.quantity),
+        subtotal: Number(i.subtotal)
+      }))
     }));
   },
 
   async addTransaction(tx: Transaction) {
     if (!supabase) return;
     
-    const { error } = await supabase
+    // 1. Insert Transaction
+    const { error: txError } = await supabase
       .from('transactions')
       .insert({
         id: tx.id,
+        date: tx.date,
         type: tx.type,
-        main_category: tx.mainCategory,
-        sub_category: tx.subCategory,
-        amount: tx.amount,
-        created_at: tx.createdAt,
-        description: tx.description
+        total: tx.total,
+        payment_amount: tx.paymentAmount,
+        change_amount: tx.changeAmount,
+        note: tx.note
       });
       
-    if (error) throw error;
+    if (txError) throw txError;
+
+    // 2. Insert Items
+    if (tx.items && tx.items.length > 0) {
+      const itemsToInsert = tx.items.map(item => ({
+        transaction_id: tx.id,
+        product_id: item.productId,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        subtotal: item.subtotal
+      }));
+      
+      const { error: itemsError } = await supabase
+        .from('transaction_items')
+        .insert(itemsToInsert);
+        
+      if (itemsError) throw itemsError;
+
+      // 3. Update Stock (Simple client-side loop for demo, ideally use DB trigger or RPC)
+      for (const item of tx.items) {
+        // Get current stock
+        const { data: product } = await supabase
+          .from('products')
+          .select('stock')
+          .eq('id', item.productId)
+          .single();
+          
+        if (product) {
+          const newStock = tx.type === 'OUT' 
+            ? Math.max(0, product.stock - item.quantity)
+            : product.stock + item.quantity;
+            
+          await supabase
+            .from('products')
+            .update({ stock: newStock })
+            .eq('id', item.productId);
+        }
+      }
+    }
   }
 };
