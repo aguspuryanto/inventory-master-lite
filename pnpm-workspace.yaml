@@ -1,0 +1,6 @@
+ignoredBuiltDependencies:
+  - esbuild
+  - supabase
+
+onlyBuiltDependencies:
+  - core-js

@@ -1,0 +1,401 @@
+
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Search, 
+  ShoppingCart, 
+  Trash2, 
+  Minus, 
+  Plus, 
+  CreditCard,
+  Barcode,
+  X,
+  Printer,
+  ChevronRight,
+  Calculator,
+  ScanLine,
+  // Added Package icon
+  Package
+} from 'lucide-react';
+import { Product, Transaction, TransactionItem, Receipt } from '../types';
+import { formatCurrency, generateId } from '../utils';
+
+interface POSProps {
+  products: Product[];
+  onCheckout: (tx: Transaction) => void;
+}
+
+const POS: React.FC<POSProps> = ({ products, onCheckout }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [cart, setCart] = useState<TransactionItem[]>([]);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState('0');
+  const [showReceipt, setShowReceipt] = useState<Receipt | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const filteredProducts = products.filter(p => 
+    (p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.barcode.includes(searchTerm)) && p.stock > 0
+  );
+
+  const total = cart.reduce((acc, item) => acc + item.subtotal, 0);
+  const change = Number(paymentAmount.replace(/\D/g, '')) - total;
+
+  useEffect(() => {
+    // Focus search on mount
+    searchInputRef.current?.focus();
+  }, []);
+
+  const addToCart = (product: Product) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.productId === product.id);
+      if (existing) {
+        if (existing.quantity >= product.stock) return prev;
+        return prev.map(item => item.productId === product.id 
+          ? { ...item, quantity: item.quantity + 1, subtotal: (item.quantity + 1) * item.price } 
+          : item
+        );
+      }
+      return [...prev, {
+        productId: product.id,
+        name: product.name,
+        price: product.sellingPrice,
+        quantity: 1,
+        subtotal: product.sellingPrice
+      }];
+    });
+    setSearchTerm('');
+  };
+
+  const updateQuantity = (productId: string, delta: number) => {
+    setCart(prev => prev.map(item => {
+      if (item.productId === productId) {
+        const newQty = Math.max(0, item.quantity + delta);
+        const product = products.find(p => p.id === productId);
+        if (product && newQty > product.stock) return item;
+        return { ...item, quantity: newQty, subtotal: newQty * item.price };
+      }
+      return item;
+    }).filter(item => item.quantity > 0));
+  };
+
+  const handleCheckout = () => {
+    const amount = Number(paymentAmount.replace(/\D/g, ''));
+    if (amount < total) {
+      alert('Pembayaran kurang!');
+      return;
+    }
+
+    const newTx: Transaction = {
+      id: crypto.randomUUID(),
+      type: 'OUT',
+      mainCategory: 'Penjualan',
+      subCategory: 'POS',
+      amount: total,
+      createdAt: new Date().toISOString(),
+      description: `Transaksi POS - ${cart.length} item`
+    };
+    // console.log(newTx);
+
+    const receipt: Receipt = {
+      id: newTx.id,
+      date: newTx.createdAt,
+      items: [...cart],
+      total: total,
+      paymentAmount: amount,
+      changeAmount: amount - total
+    };
+    // console.log(cart);
+
+    onCheckout(newTx, cart);
+    setCart([]);
+    setIsCheckoutOpen(false);
+    setPaymentAmount('0');
+    setShowReceipt(receipt);
+  };
+
+  return (
+    <div className="h-full flex flex-col gap-6 lg:flex-row">
+      {/* Product Selection */}
+      <div className="flex-1 space-y-4">
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+          <input 
+            ref={searchInputRef}
+            type="text" 
+            placeholder="Cari barang atau scan barcode..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-12 pr-12 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all dark:text-slate-100"
+          />
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+            <span className="hidden md:block text-[10px] font-bold text-slate-300 dark:text-slate-500 border border-slate-100 dark:border-slate-600 px-1.5 py-0.5 rounded">CTRL + F</span>
+            <Barcode className="text-slate-300 dark:text-slate-500" size={20} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto max-h-[calc(100vh-280px)] pr-2">
+          {filteredProducts.map(p => (
+            <button
+              key={p.id}
+              onClick={() => addToCart(p)}
+              className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-purple-200 dark:hover:border-purple-500/50 transition-all text-left flex flex-col h-full group"
+            >
+              <div className="w-full aspect-square rounded-xl bg-slate-50 dark:bg-slate-700/50 flex items-center justify-center mb-3 group-hover:bg-purple-50 dark:group-hover:bg-purple-900/30 transition-colors overflow-hidden">
+                {p.image_url ? (
+                  <img 
+                    src={p.image_url} 
+                    alt={p.name}
+                    className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-200"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                ) : null}
+                <Package className={`text-slate-300 dark:text-slate-500 group-hover:text-purple-300 dark:group-hover:text-purple-400 ${p.image_url ? 'hidden' : ''}`} size={32} />
+              </div>
+              <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm leading-tight mb-1">{p.name}</h4>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">{p.category}</p>
+              <div className="mt-auto pt-2 flex items-center justify-between">
+                <p className="text-purple-600 dark:text-purple-400 font-bold">Rp {formatCurrency(p.sellingPrice)}</p>
+                <div className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300">
+                  {p.stock}
+                </div>
+              </div>
+            </button>
+          ))}
+          {filteredProducts.length === 0 && (
+            <div className="col-span-full py-20 flex flex-col items-center opacity-40 dark:opacity-20 text-slate-800 dark:text-slate-100">
+              <ScanLine size={48} className="mb-2" />
+              <p>Produk tidak ditemukan atau stok habis.</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Cart Panel */}
+      <div className="w-full lg:w-96 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl flex flex-col overflow-hidden transition-colors duration-200">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+          <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <ShoppingCart size={20} className="text-purple-600 dark:text-purple-400" />
+            Keranjang
+          </h3>
+          <span className="bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-3 py-1 rounded-full text-xs font-bold">
+            {cart.length} Jenis
+          </span>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-[300px]">
+          {cart.map(item => (
+            <div key={item.productId} className="bg-white dark:bg-slate-800/80 rounded-2xl p-4 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col gap-3 group relative transition-all hover:shadow-md">
+              <div className="flex justify-between items-start gap-2">
+                <div className="flex-1">
+                  <h5 className="font-bold text-slate-800 dark:text-slate-100 text-sm leading-tight mb-1">{item.name}</h5>
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Rp {formatCurrency(item.price)} / item</p>
+                </div>
+                <button 
+                  onClick={() => updateQuantity(item.productId, -item.quantity)} 
+                  className="text-slate-300 hover:text-rose-500 dark:text-slate-500 dark:hover:text-rose-400 transition-colors p-1"
+                  title="Hapus dari keranjang"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              
+              <div className="flex items-center justify-between pt-3 border-t border-slate-50 dark:border-slate-700/50">
+                <p className="text-purple-600 dark:text-purple-400 font-black text-sm">Rp {formatCurrency(item.subtotal)}</p>
+                
+                <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-900/50 p-1 rounded-xl border border-slate-100 dark:border-slate-700">
+                  <button 
+                    onClick={() => updateQuantity(item.productId, -1)} 
+                    className="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300 shadow-sm transition-colors"
+                  >
+                    <Minus size={14} />
+                  </button>
+                  <span className="text-sm font-bold w-8 text-center text-slate-800 dark:text-slate-100">{item.quantity}</span>
+                  <button 
+                    onClick={() => updateQuantity(item.productId, 1)} 
+                    className="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300 shadow-sm transition-colors"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {cart.length === 0 && (
+            <div className="h-full flex flex-col items-center justify-center opacity-30 dark:opacity-20 text-slate-800 dark:text-slate-100 gap-3">
+              <ShoppingCart size={48} />
+              <p className="text-sm font-medium">Belum ada barang di keranjang</p>
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 space-y-4">
+          <div className="space-y-2">
+            <div className="flex justify-between text-slate-500 dark:text-slate-400 text-sm">
+              <span>Subtotal</span>
+              <span>Rp {formatCurrency(total)}</span>
+            </div>
+            <div className="flex justify-between text-slate-800 dark:text-slate-100 font-bold text-xl pt-2 border-t border-slate-200 dark:border-slate-700">
+              <span>Total</span>
+              <span className="text-purple-600 dark:text-purple-400">Rp {formatCurrency(total)}</span>
+            </div>
+          </div>
+          
+          <button
+            disabled={cart.length === 0}
+            onClick={() => setIsCheckoutOpen(true)}
+            className="w-full bg-purple-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-purple-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed shadow-lg shadow-purple-100 dark:shadow-none transition-all"
+          >
+            Bayar Sekarang
+            <ChevronRight size={20} />
+          </button>
+        </div>
+      </div>
+
+      {/* Checkout Modal */}
+      {isCheckoutOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsCheckoutOpen(false)} />
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 bg-purple-600 text-white">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold">Checkout Pembayaran</h3>
+                <button onClick={() => setIsCheckoutOpen(false)}><X size={20} /></button>
+              </div>
+              <div className="text-center py-4">
+                <p className="text-purple-100 text-sm mb-1 uppercase tracking-widest font-bold">Total Tagihan</p>
+                <h2 className="text-4xl font-black">Rp {formatCurrency(total)}</h2>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase flex items-center gap-2">
+                  <CreditCard size={14} /> Jumlah Bayar
+                </label>
+                <input 
+                  autoFocus
+                  type="text"
+                  value={paymentAmount === '0' ? '' : formatCurrency(Number(paymentAmount.replace(/\D/g, '')))}
+                  onChange={e => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    setPaymentAmount(val || '0');
+                  }}
+                  placeholder="0"
+                  className="w-full text-3xl font-bold text-right py-4 px-4 border-2 border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-2xl focus:border-purple-500 outline-none transition-all"
+                />
+              </div>
+
+              <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl space-y-3">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-500 dark:text-slate-400">Kembalian</span>
+                  <span className={`text-xl font-bold ${change >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                    Rp {formatCurrency(Math.max(0, change))}
+                  </span>
+                </div>
+                {change < 0 && (
+                  <p className="text-rose-500 dark:text-rose-400 text-xs text-right font-medium animate-pulse">Kurang: Rp {formatCurrency(Math.abs(change))}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {[50000, 100000, 200000].map(amt => (
+                  <button 
+                    key={amt}
+                    onClick={() => setPaymentAmount(amt.toString())}
+                    className="py-3 border border-slate-200 dark:border-slate-600 rounded-xl font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                  >
+                    Rp {formatCurrency(amt)}
+                  </button>
+                ))}
+                <button 
+                  onClick={() => setPaymentAmount(total.toString())}
+                  className="py-3 bg-slate-100 dark:bg-slate-700 rounded-xl font-bold text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-600"
+                >
+                  Uang Pas
+                </button>
+              </div>
+
+              <button 
+                disabled={change < 0}
+                onClick={handleCheckout}
+                className="w-full bg-purple-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-purple-700 shadow-xl shadow-purple-100 dark:shadow-none disabled:bg-slate-200 dark:disabled:bg-slate-700 transition-all"
+              >
+                Selesaikan Transaksi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Receipt Preview */}
+      {showReceipt && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={() => setShowReceipt(null)} />
+          <div className="relative w-full max-w-sm bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden p-8 animate-in slide-in-from-bottom-10 duration-300">
+            <div className="text-center space-y-1 mb-6">
+              <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Printer size={32} />
+              </div>
+              <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 uppercase">KasirKu POS</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Gedung Sudirman Lantai 4, Jakarta</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Telp: (021) 12345678</p>
+            </div>
+
+            <div className="border-t border-dashed border-slate-200 dark:border-slate-700 py-4 space-y-2">
+              <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span>{showReceipt.id}</span>
+                <span>{new Date(showReceipt.date).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span>Kasir: Admin Utama</span>
+              </div>
+            </div>
+
+            <div className="border-t border-dashed border-slate-200 dark:border-slate-700 py-4 space-y-3">
+              {showReceipt.items.map(item => (
+                <div key={item.productId} className="flex justify-between text-sm">
+                  <div className="flex-1">
+                    <p className="font-bold text-slate-700 dark:text-slate-200">{item.name}</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">{item.quantity} x Rp {formatCurrency(item.price)}</p>
+                  </div>
+                  <span className="font-bold text-slate-700 dark:text-slate-200">Rp {formatCurrency(item.subtotal)}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="border-t border-dashed border-slate-200 dark:border-slate-700 py-4 space-y-2">
+              <div className="flex justify-between text-sm font-bold text-slate-800 dark:text-slate-100">
+                <span>Total</span>
+                <span className="text-lg">Rp {formatCurrency(showReceipt.total)}</span>
+              </div>
+              <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400">
+                <span>Tunai</span>
+                <span>Rp {formatCurrency(showReceipt.paymentAmount || 0)}</span>
+              </div>
+              <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400">
+                <span>Kembali</span>
+                <span>Rp {formatCurrency(showReceipt.changeAmount || 0)}</span>
+              </div>
+            </div>
+
+            <div className="text-center mt-8 space-y-4">
+              <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Terima kasih telah berbelanja!</p>
+              <button 
+                onClick={() => setShowReceipt(null)}
+                className="w-full py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-colors"
+              >
+                Selesai
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default POS;
