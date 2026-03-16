@@ -235,13 +235,32 @@ const Settings: React.FC = () => {
   };
 
   const handleTogglePayment = async (id: string) => {
-    // console.log('Toggling payment:', id);
-    setPaymentMethods(paymentMethods.map(p => 
-      p.id === id ? { ...p, isActive: !p.isActive } : p
-    ));
-
-    const result = await db.updatePaymentMethod({ id, is_active: !paymentMethods.find(p => p.id === id)?.isActive });
-    console.log('Update result:', result);
+    const currentMethod = paymentMethods.find(p => p.id === id);
+    if (!currentMethod) return;
+    
+    try {
+      const result = await db.updatePaymentMethod({ 
+        id, 
+        is_active: !currentMethod.isActive 
+      });
+      // console.log('Update result:', result);
+      
+      // Update local state only after successful database update
+      setPaymentMethods(paymentMethods.map(p => 
+        p.id === id ? { ...p, isActive: !p.isActive } : p
+      ));
+      
+      addToast({
+        type: 'success',
+        title: 'Metode pembayaran berhasil diperbarui!'
+      });
+    } catch (error: any) {
+      console.error('Error updating payment method:', error);
+      addToast({
+        type: 'error',
+        title: error.message || 'Gagal memperbarui metode pembayaran!'
+      });
+    }
   };
 
   const handleDeletePayment = (id: string) => {

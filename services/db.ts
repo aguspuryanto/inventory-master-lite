@@ -357,10 +357,11 @@ export const db = {
   async updatePaymentMethod(method: any) {
     if (!supabase) return;
     
-    // Use upsert to handle both insert and update cases
+    // Use update with proper method structure
     const { data, error } = await supabase
-      .from('payment_methods')
-      .upsert(method, { onConflict: 'id' })
+      .from("payment_methods")
+      .update({ is_active: method.is_active })
+      .eq("id", method.id)
       .select()
       .single();
       
