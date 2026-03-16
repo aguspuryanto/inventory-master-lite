@@ -9,7 +9,7 @@ export const supabase = supabaseUrl && supabaseKey
   ? createClient(supabaseUrl, supabaseKey) 
   : null;
 
-  export const formatRupiah = (amount: number): string => {
+export const formatRupiah = (amount: number): string => {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
@@ -30,54 +30,55 @@ export const formatRupiahHuman = (amount: number): string => {
   return formatRupiah(amount);
 };
 
-export const getProducts = async (): Promise<{ data: Product[], error: any }> => {
-    const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
+// Move to services/db.ts
+// export const getProducts = async (): Promise<{ data: Product[], error: any }> => {
+//     const { data, error } = await supabase
+//         .from('products')
+//         .select('*')
+//         .order('created_at', { ascending: false });
 
-    if (error) {
-        console.error('Error fetching products:', error);
-        return { data: [], error };
-    }
+//     if (error) {
+//         console.error('Error fetching products:', error);
+//         return { data: [], error };
+//     }
 
-    const mappedData = data.map((p: any) => ({
-        id: String(p.id),
-        code: p.code,
-        name: p.name,
-        barcode: p.barcode,
-        purchasePrice: p.purchase_price,
-        sellingPrice: p.selling_price,
-        stock: p.stock,
-        category: p.category,
-        createdAt: p.created_at,
-        updatedAt: p.updated_at,
-    }));
+//     const mappedData = data.map((p: any) => ({
+//         id: String(p.id),
+//         code: p.code,
+//         name: p.name,
+//         barcode: p.barcode,
+//         purchasePrice: p.purchase_price,
+//         sellingPrice: p.selling_price,
+//         stock: p.stock,
+//         category: p.category,
+//         createdAt: p.created_at,
+//         updatedAt: p.updated_at,
+//     }));
 
-    return { data: mappedData, error: null };
-};
+//     return { data: mappedData, error: null };
+// };
 
-// transaction
-export const getTransactions = async (): Promise<{ data: Transaction[], error: any }> => {
-    const { data, error } = await supabase
-        .from('transactions')
-        .select('*')
-        .order('created_at', { ascending: false });
+// // transaction
+// export const getTransactions = async (): Promise<{ data: Transaction[], error: any }> => {
+//     const { data, error } = await supabase
+//         .from('transactions')
+//         .select('*')
+//         .order('created_at', { ascending: false });
 
-    if (error) {
-        console.error('Error fetching transactions:', error);
-        return { data: [], error };
-    }
+//     if (error) {
+//         console.error('Error fetching transactions:', error);
+//         return { data: [], error };
+//     }
 
-    const mappedData = data.map((t: any) => ({
-        id: String(t.id),
-        type: t.type,
-        mainCategory: t.main_category,
-        subCategory: t.sub_category,
-        amount: t.amount,
-        createdAt: t.created_at,
-        description: t.description,
-    }));
+//     const mappedData = data.map((t: any) => ({
+//         id: String(t.id),
+//         type: t.type,
+//         mainCategory: t.main_category,
+//         subCategory: t.sub_category,
+//         amount: t.amount,
+//         createdAt: t.created_at,
+//         description: t.description,
+//     }));
 
-    return { data: mappedData, error: null };
-};
+//     return { data: mappedData, error: null };
+// };
