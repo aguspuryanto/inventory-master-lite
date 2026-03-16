@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { db } from '../services/db';
+import { useToast } from '../components/toast';
 import { 
-  Store, 
+  Store as StoreIcon, 
   User, 
   RefreshCw, 
   Printer, 
@@ -27,7 +29,7 @@ interface UserProfile {
   name: string;
   email: string;
   role: string;
-  avatar: string;
+  avatar_url: string;
 }
 
 interface Staff {
@@ -47,21 +49,22 @@ interface PaymentMethod {
 }
 
 const Settings: React.FC = () => {
+  const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState('store');
-  const [storeSettings, setStoreSettings] = useState<StoreSettings>({
-    name: 'Toko KasirKu',
-    address: 'Jl. Contoh No. 123, Jakarta',
-    phone: '021-12345678',
-    email: 'info@kasirku.com',
-    tax: 11
-  });
+  // const [storeSettings, setStoreSettings] = useState<StoreSettings>({
+  //   name: 'Toko KasirKu',
+  //   address: 'Jl. Contoh No. 123, Jakarta',
+  //   phone: '021-12345678',
+  //   email: 'info@kasirku.com',
+  //   tax: 11
+  // });
 
-  const [userProfile, setUserProfile] = useState<UserProfile>({
-    name: 'Admin Utama',
-    email: 'admin@kasirku.com',
-    role: 'Super Admin',
-    avatar: ''
-  });
+  // const [userProfile, setUserProfile] = useState<UserProfile>({
+  //   name: 'Admin Utama',
+  //   email: 'admin@kasirku.com',
+  //   role: 'Super Admin',
+  //   avatar_url: ''
+  // });
 
   const [staff, setStaff] = useState<Staff[]>([
     {
@@ -82,14 +85,14 @@ const Settings: React.FC = () => {
     }
   ]);
 
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([
-    { id: '1', name: 'Tunai', type: 'cash', isActive: true },
-    { id: '2', name: 'Kartu Debit', type: 'card', isActive: true },
-    { id: '3', name: 'Kartu Kredit', type: 'card', isActive: true },
-    { id: '4', name: 'GoPay', type: 'ewallet', isActive: false },
-    { id: '5', name: 'OVO', type: 'ewallet', isActive: false },
-    { id: '6', name: 'Transfer Bank', type: 'bank_transfer', isActive: true }
-  ]);
+  // const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([
+  //   { id: '1', name: 'Tunai', type: 'cash', isActive: true },
+  //   { id: '2', name: 'Kartu Debit', type: 'card', isActive: true },
+  //   { id: '3', name: 'Kartu Kredit', type: 'card', isActive: true },
+  //   { id: '4', name: 'GoPay', type: 'ewallet', isActive: false },
+  //   { id: '5', name: 'OVO', type: 'ewallet', isActive: false },
+  //   { id: '6', name: 'Transfer Bank', type: 'bank_transfer', isActive: true }
+  // ]);
 
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [showAddPayment, setShowAddPayment] = useState(false);
@@ -97,7 +100,7 @@ const Settings: React.FC = () => {
   const [newPayment, setNewPayment] = useState<Partial<PaymentMethod>>({});
 
   const tabs = [
-    { id: 'store', label: 'Pengaturan Toko', icon: Store },
+    { id: 'store', label: 'Pengaturan Toko', icon: StoreIcon },
     { id: 'profile', label: 'Profil', icon: User },
     { id: 'sync', label: 'Sinkronisasi', icon: RefreshCw },
     { id: 'printer', label: 'Printer & Struk', icon: Printer },
@@ -105,16 +108,88 @@ const Settings: React.FC = () => {
     { id: 'payment', label: 'Metode Pembayaran', icon: CreditCard }
   ];
 
-  const handleSaveStoreSettings = () => {
+  const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // call storeSettings
+  useEffect(() => {
+    const fetchStoreSettings = async () => {
+      try {
+        // Informasi Toko
+        const settings = await db.getStoreSettings();
+        setStoreSettings(settings);
+
+        // Profil Pengguna
+        const user = await db.getUserProfile();
+        console.log('User profile:', user);
+        setUserProfile(user);
+
+        // Sinkronisasi
+
+        // Pengaturan Printer
+
+        // Daftar Staff
+
+        // Metode Pembayaran
+        const paymentMethods = await db.getPaymentMethods();
+        console.log('Payment methods:', paymentMethods);
+        setPaymentMethods(paymentMethods);
+      } catch (error) {
+        console.error('Error fetching store settings:', error);
+      }
+    };
+    fetchStoreSettings();
+  }, []);
+
+  const handleSaveStoreSettings = async () => {
     // Simpan pengaturan toko
-    console.log('Saving store settings:', storeSettings);
-    alert('Pengaturan toko berhasil disimpan!');
+    if (!storeSettings) return;
+    
+    setIsSaving(true);
+    try {
+      console.log('Saving store settings:', storeSettings);
+      // update store settings
+      await db.updateStoreSettings(storeSettings);
+      addToast({
+        type: 'success',
+        title: 'Pengaturan toko berhasil disimpan!'
+      });
+    } catch (error) {
+      console.error('Error saving store settings:', error);
+      addToast({
+        type: 'error',
+        title: 'Gagal menyimpan pengaturan toko!'
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     // Simpan profil
-    console.log('Saving profile:', userProfile);
-    alert('Profil berhasil diperbarui!');
+    if (!userProfile) return;
+    
+    setIsSaving(true);
+    try {
+      console.log('Saving profile:', userProfile);
+      // update user profile
+      await db.updateUserProfile(userProfile);
+      addToast({
+        type: 'success',
+        title: 'Profil berhasil diperbarui!'
+      });
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      addToast({
+        type: 'error',
+        title: 'Gagal memperbarui profil!'
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleAddStaff = () => {
@@ -159,10 +234,14 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleTogglePayment = (id: string) => {
+  const handleTogglePayment = async (id: string) => {
+    // console.log('Toggling payment:', id);
     setPaymentMethods(paymentMethods.map(p => 
       p.id === id ? { ...p, isActive: !p.isActive } : p
     ));
+
+    const result = await db.updatePaymentMethod({ id, is_active: !paymentMethods.find(p => p.id === id)?.isActive });
+    console.log('Update result:', result);
   };
 
   const handleDeletePayment = (id: string) => {
@@ -180,8 +259,8 @@ const Settings: React.FC = () => {
             </label>
             <input
               type="text"
-              value={storeSettings.name}
-              onChange={(e) => setStoreSettings({...storeSettings, name: e.target.value})}
+              value={storeSettings?.name || ''}
+              onChange={(e) => setStoreSettings(storeSettings ? {...storeSettings, name: e.target.value} : {name: e.target.value, address: '', phone: '', email: '', tax: 0})}
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-slate-700 dark:text-slate-100"
             />
           </div>
@@ -191,8 +270,8 @@ const Settings: React.FC = () => {
             </label>
             <input
               type="email"
-              value={storeSettings.email}
-              onChange={(e) => setStoreSettings({...storeSettings, email: e.target.value})}
+              value={storeSettings?.email || ''}
+              onChange={(e) => setStoreSettings(storeSettings ? {...storeSettings, email: e.target.value} : {name: '', address: '', phone: '', email: e.target.value, tax: 0})}
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-slate-700 dark:text-slate-100"
             />
           </div>
@@ -202,8 +281,8 @@ const Settings: React.FC = () => {
             </label>
             <input
               type="tel"
-              value={storeSettings.phone}
-              onChange={(e) => setStoreSettings({...storeSettings, phone: e.target.value})}
+              value={storeSettings?.phone || ''}
+              onChange={(e) => setStoreSettings(storeSettings ? {...storeSettings, phone: e.target.value} : {name: '', address: '', phone: e.target.value, email: '', tax: 0})}
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-slate-700 dark:text-slate-100"
             />
           </div>
@@ -213,8 +292,8 @@ const Settings: React.FC = () => {
             </label>
             <input
               type="number"
-              value={storeSettings.tax}
-              onChange={(e) => setStoreSettings({...storeSettings, tax: Number(e.target.value)})}
+              value={storeSettings?.tax || 0}
+              onChange={(e) => setStoreSettings(storeSettings ? {...storeSettings, tax: Number(e.target.value)} : {name: '', address: '', phone: '', email: '', tax: Number(e.target.value)})}
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-slate-700 dark:text-slate-100"
             />
           </div>
@@ -224,18 +303,19 @@ const Settings: React.FC = () => {
             Alamat
           </label>
           <textarea
-            value={storeSettings.address}
-            onChange={(e) => setStoreSettings({...storeSettings, address: e.target.value})}
+            value={storeSettings?.address || ''}
+            onChange={(e) => setStoreSettings(storeSettings ? {...storeSettings, address: e.target.value} : {name: '', address: e.target.value, phone: '', email: '', tax: 0})}
             rows={3}
             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-slate-700 dark:text-slate-100"
           />
         </div>
         <button
           onClick={handleSaveStoreSettings}
-          className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+          disabled={isSaving}
+          className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Save size={16} />
-          Simpan Pengaturan
+          {isSaving ? 'Menyimpan...' : 'Simpan Pengaturan'}
         </button>
       </div>
     </div>
@@ -260,8 +340,8 @@ const Settings: React.FC = () => {
             </label>
             <input
               type="text"
-              value={userProfile.name}
-              onChange={(e) => setUserProfile({...userProfile, name: e.target.value})}
+              value={userProfile?.name || ''}
+              onChange={(e) => setUserProfile(userProfile ? {...userProfile, name: e.target.value} : {name: e.target.value, email: '', role: '', avatar_url: ''})}
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-slate-700 dark:text-slate-100"
             />
           </div>
@@ -271,8 +351,8 @@ const Settings: React.FC = () => {
             </label>
             <input
               type="email"
-              value={userProfile.email}
-              onChange={(e) => setUserProfile({...userProfile, email: e.target.value})}
+              value={userProfile?.email || ''}
+              onChange={(e) => setUserProfile(userProfile ? {...userProfile, email: e.target.value} : {name: '', email: e.target.value, role: '', avatar_url: ''})}
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-slate-700 dark:text-slate-100"
             />
           </div>
@@ -282,7 +362,7 @@ const Settings: React.FC = () => {
             </label>
             <input
               type="text"
-              value={userProfile.role}
+              value={userProfile?.role || ''}
               disabled
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-100 dark:bg-slate-600 text-slate-500 dark:text-slate-400"
             />
@@ -300,10 +380,11 @@ const Settings: React.FC = () => {
         </div>
         <button
           onClick={handleSaveProfile}
-          className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+          disabled={isSaving}
+          className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Save size={16} />
-          Simpan Profil
+          {isSaving ? 'Menyimpan...' : 'Simpan Profil'}
         </button>
       </div>
     </div>

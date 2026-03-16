@@ -13,12 +13,8 @@ export const db = {
     
     if (error) {
       console.error('Error fetching products:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
       return [];
     }
-    
-    // console.log('Raw products data from Supabase:', data);
-    // console.log('Products count:', data?.length || 0);
     
     return data.map(p => ({
       id: p.id,
@@ -186,12 +182,8 @@ export const db = {
       
     if (error) {
       console.error('Error fetching transactions:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
       return [];
     }
-    
-    // console.log('Raw transactions data from Supabase:', data);
-    // console.log('Transactions count:', data?.length || 0);
 
     // join with transaction_items
     // Fetch transaction items to join with transactions
@@ -260,5 +252,123 @@ export const db = {
       
       if (itemsError) throw itemsError;
     }
-  }
+  },
+
+  // store_settings
+  async getStoreSettings() {
+    if (!supabase) return null;
+    
+    const { data, error } = await supabase
+      .from('store_settings')
+      .select('*')
+      .single();
+      
+    if (error) {
+      console.error('Error fetching store settings:', error);
+      return null;
+    }
+    
+    return { ...data };
+  },
+  
+  async updateStoreSettings(settings: any) {
+    if (!supabase) return;
+    
+    // First get the current settings to get the ID
+    const { data: currentData } = await supabase
+      .from('store_settings')
+      .select('id')
+      .single();
+    
+    if (!currentData) {
+      // If no record exists, insert a new one
+      const { error } = await supabase
+        .from('store_settings')
+        .insert({ ...settings, id: crypto.randomUUID() });
+      
+      if (error) throw error;
+    } else {
+      // Update existing record
+      const { error } = await supabase
+        .from('store_settings')
+        .update(settings)
+        .eq('id', currentData.id);
+        
+      if (error) throw error;
+    }
+  },
+
+  // Profil Pengguna
+  async getUserProfile() {
+    if (!supabase) return null;
+    
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .single();
+      
+    if (error) {
+      console.error('Error fetching user profile:', error);
+      return null;
+    }
+    
+    return { ...data };
+  },
+  
+  async updateUserProfile(profile: any) {
+    if (!supabase) return;
+    
+    // Use upsert to handle both insert and update cases
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .upsert(profile, { onConflict: 'id' })
+      .select()
+      .single();
+      
+    if (error) {
+      console.error('Error updating user profile:', error);
+      throw error;
+    }
+    
+    return data;
+  },
+
+  // Metode Pembayaran
+  async getPaymentMethods() {
+    if (!supabase) return [];
+    
+    const { data, error } = await supabase
+      .from('payment_methods')
+      .select('*')
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      console.error('Error fetching payment methods:', error);
+      return [];
+    }
+    
+    // replace is_active become isActive
+    return data.map((method) => ({
+      ...method,
+      isActive: method.is_active
+    })) || [];
+  },
+  
+  async updatePaymentMethod(method: any) {
+    if (!supabase) return;
+    
+    // Use upsert to handle both insert and update cases
+    const { data, error } = await supabase
+      .from('payment_methods')
+      .upsert(method, { onConflict: 'id' })
+      .select()
+      .single();
+      
+    if (error) {
+      console.error('Error updating payment method:', error);
+      throw error;
+    }
+    
+    return data;
+  },
 };

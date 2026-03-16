@@ -40,14 +40,14 @@ const SidebarItem: React.FC<{ to: string, icon: React.ReactNode, label: string, 
       to={to} 
       onClick={onClick}
       className={({ isActive }) => `
-        flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200
+        flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl transition-all duration-200 text-sm lg:text-base
         ${isActive 
           ? 'bg-purple-600 text-white shadow-lg shadow-purple-200 dark:shadow-none' 
           : 'text-slate-500 dark:text-slate-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-600 dark:hover:text-purple-400'}
       `}
     >
       {icon}
-      <span className="font-semibold">{label}</span>
+      <span className="font-semibold truncate">{label}</span>
     </NavLink>
   );
 };
@@ -192,7 +192,7 @@ const App: React.FC = () => {
     <HashRouter>
       <ToastProvider>
         <div className={`min-h-screen bg-slate-50 dark:bg-slate-900 ${isDarkMode ? 'dark' : ''}`}>
-          <div className="flex h-screen">
+          <div className="flex flex-col lg:flex-row h-screen">
             {/* Mobile Sidebar Overlay */}
             {isSidebarOpen && (
               <div 
@@ -203,118 +203,123 @@ const App: React.FC = () => {
 
             {/* Sidebar */}
             <aside className={`
-              fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 flex-shrink-0
-              ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+              fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:w-72 xl:w-80 flex-shrink-0
+              ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
             `}>
-            <div className="p-6">
-              <div className="flex items-center gap-2 mb-8">
-                <div className="bg-purple-600 p-2 rounded-lg">
-                  <Package className="text-white h-6 w-6" />
+              <div className="flex flex-col h-full">
+                {/* Logo Section */}
+                <div className="p-4 lg:p-6 border-b border-slate-100 dark:border-slate-700">
+                  <div className="flex items-center gap-2 lg:gap-3">
+                    <div className="bg-purple-600 p-2 lg:p-2.5 rounded-lg flex-shrink-0">
+                      <Package className="text-white h-5 w-5 lg:h-6 lg:w-6" />
+                    </div>
+                    <h1 className="text-lg lg:text-xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                      DTA POS
+                    </h1>
+                  </div>
                 </div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                  DTA POS
-                </h1>
-              </div>
 
-              <nav className="space-y-2">
-                <SidebarItem to="/" icon={<LayoutDashboard size={20} />} label="Dashboard" onClick={() => setIsSidebarOpen(false)} />
-                <SidebarItem to="/products" icon={<Package size={20} />} label="Produk" onClick={() => setIsSidebarOpen(false)} />
-                <SidebarItem to="/pos" icon={<ShoppingCart size={20} />} label="Kasir" onClick={() => setIsSidebarOpen(false)} />
-                <SidebarItem to="/transactions" icon={<History size={20} />} label="Transaksi" onClick={() => setIsSidebarOpen(false)} />
-                <SidebarItem to="/reports" icon={<FileText size={20} />} label="Laporan" onClick={() => setIsSidebarOpen(false)} />
-                <SidebarItem to="/settings" icon={<Settings size={20} />} label="Pengaturan" onClick={() => setIsSidebarOpen(false)} />
-              </nav>
-            </div>
-            
-            <div className="absolute bottom-0 w-full p-6 border-t border-slate-100 dark:border-slate-700">
-              {/* User profile moved to header */}
-            </div>
-          </aside>
-
-          {/* Main Content */}
-          <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-            {/* Header */}
-            <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 lg:px-8 transition-colors duration-200">
-              <div className="flex items-center gap-4">
-                <button 
-                  onClick={() => setIsSidebarOpen(true)}
-                  className="p-2 -ml-2 text-slate-500 dark:text-slate-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 lg:hidden"
-                >
-                  <Menu size={24} />
-                </button>
-                <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 lg:text-xl">
-                  {/* Dynamic Title logic could go here */}
-                </h2>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setIsDarkMode(!isDarkMode)}
-                  className="p-2 text-slate-500 dark:text-slate-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                  aria-label="Toggle Dark Mode"
-                >
-                  {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-                </button>
-                <button className="p-2 text-slate-500 dark:text-slate-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 relative">
-                  <Bell size={20} />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-800"></span>
-                </button>
+                {/* Navigation */}
+                <nav className="flex-1 p-2 lg:p-4 overflow-y-auto">
+                  <div className="space-y-1 lg:space-y-2">
+                    <SidebarItem to="/" icon={<LayoutDashboard size={18} />} label="Dashboard" onClick={() => setIsSidebarOpen(false)} />
+                    <SidebarItem to="/products" icon={<Package size={18} />} label="Produk" onClick={() => setIsSidebarOpen(false)} />
+                    <SidebarItem to="/pos" icon={<ShoppingCart size={18} />} label="Kasir" onClick={() => setIsSidebarOpen(false)} />
+                    <SidebarItem to="/transactions" icon={<History size={18} />} label="Transaksi" onClick={() => setIsSidebarOpen(false)} />
+                    <SidebarItem to="/reports" icon={<FileText size={18} />} label="Laporan" onClick={() => setIsSidebarOpen(false)} />
+                    <SidebarItem to="/settings" icon={<Settings size={18} />} label="Pengaturan" onClick={() => setIsSidebarOpen(false)} />
+                  </div>
+                </nav>
                 
-                {/* User Profile - Moved from sidebar */}
-                <div className="flex items-center gap-3 pl-2 border-l border-slate-200 dark:border-slate-700">
-                  <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
-                    <User size={20} className="text-slate-400 dark:text-slate-300" />
+                {/* User Profile Section - Bottom */}
+                <div className="p-4 lg:p-6 border-t border-slate-100 dark:border-slate-700">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
+                      <User size={16} className="text-slate-400 dark:text-slate-300 lg:text-base" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs lg:text-sm font-bold text-slate-700 dark:text-slate-200 truncate">
+                        {session?.user?.user_metadata?.name || session?.user?.email || 'Admin Utama'}
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                        {session?.user ? 'Kasir / Admin' : 'Super Admin'}
+                      </p>
+                    </div>
+                    <button 
+                      onClick={handleLogout}
+                      className="p-1.5 lg:p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors flex-shrink-0"
+                      title="Keluar"
+                    >
+                      <LogOut size={16} className="lg:w-5 lg:h-5" />
+                    </button>
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                      {session?.user?.user_metadata?.name || session?.user?.email || 'Admin Utama'}
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {session?.user ? 'Kasir / Admin' : 'Super Admin'}
-                    </p>
-                  </div>
+                </div>
+              </div>
+            </aside>
+
+            {/* Main Content */}
+            <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+              {/* Header */}
+              <header className="sticky top-0 z-30 flex items-center justify-between h-14 lg:h-16 px-3 lg:px-6 xl:px-8 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 transition-colors duration-200">
+                <div className="flex items-center gap-2 lg:gap-4">
                   <button 
-                    onClick={handleLogout}
-                    className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
-                    title="Keluar"
+                    onClick={() => setIsSidebarOpen(true)}
+                    className="p-2 text-slate-500 dark:text-slate-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 lg:hidden"
+                    aria-label="Open sidebar"
                   >
-                    <LogOut size={20} />
+                    <Menu size={20} />
+                  </button>
+                  <h2 className="text-base lg:text-lg xl:text-xl font-bold text-slate-800 dark:text-slate-100">
+                    {/* Dynamic Title logic could go here */}
+                  </h2>
+                </div>
+                
+                <div className="flex items-center gap-1 lg:gap-2">
+                  <button 
+                    onClick={() => setIsDarkMode(!isDarkMode)}
+                    className="p-2 text-slate-500 dark:text-slate-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                    aria-label="Toggle Dark Mode"
+                  >
+                    {isDarkMode ? <Sun size={18} className="lg:w-5 lg:h-5" /> : <Moon size={18} className="lg:w-5 lg:h-5" />}
+                  </button>
+                  <button className="p-2 text-slate-500 dark:text-slate-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 relative hidden sm:flex">
+                    <Bell size={18} className="lg:w-5 lg:h-5" />
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white dark:border-slate-800"></span>
                   </button>
                 </div>
-              </div>
-            </header>
+              </header>
 
-            <div className="flex-1 p-4 lg:p-8 overflow-y-auto relative bg-slate-50 dark:bg-slate-900">
-              {!isSupabaseConfigured && (
-                <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-800 dark:text-amber-200 text-sm flex items-start gap-3">
-                  <div className="mt-0.5">⚠️</div>
-                  <div>
-                    <p className="font-bold mb-1">Database Supabase Belum Dikonfigurasi</p>
-                    <p>Aplikasi saat ini berjalan menggunakan data dummy di memori (perubahan akan hilang saat halaman direfresh). Untuk mengaktifkan penyimpanan permanen, tambahkan <code>VITE_SUPABASE_URL</code> dan <code>VITE_SUPABASE_ANON_KEY</code> di pengaturan Environment Variables.</p>
+              <div className="flex-1 p-3 lg:p-4 xl:p-8 overflow-y-auto relative bg-slate-50 dark:bg-slate-900">
+                {!isSupabaseConfigured && (
+                  <div className="mb-4 lg:mb-6 p-3 lg:p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-800 dark:text-amber-200 text-sm flex items-start gap-3">
+                    <div className="mt-0.5 flex-shrink-0">⚠️</div>
+                    <div>
+                      <p className="font-bold mb-1 text-xs lg:text-sm">Database Supabase Belum Dikonfigurasi</p>
+                      <p className="text-xs lg:text-sm">Aplikasi saat ini berjalan menggunakan data dummy di memori (perubahan akan hilang saat halaman direfresh). Untuk mengaktifkan penyimpanan permanen, tambahkan <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">VITE_SUPABASE_URL</code> dan <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">VITE_SUPABASE_ANON_KEY</code> di pengaturan Environment Variables.</p>
+                    </div>
                   </div>
-                </div>
-              )}
-              
-              {isLoading ? (
-                <div className="flex items-center justify-center h-64">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-                </div>
-              ) : (
-                <Routes>
-                  <Route path="/" element={<Dashboard products={products} transactions={transactions} />} />
-                  <Route path="/products" element={<Products products={products} setProducts={setProducts} onStockEntry={handleAddTransaction} />} />
-                  <Route path="/pos" element={<POS products={products} onCheckout={handleAddTransaction} />} />
-                  <Route path="/transactions" element={<Transactions transactions={transactions} />} />
-                  <Route path="/reports" element={<Reports transactions={transactions} products={products} />} />
-                  <Route path="/settings" element={<SettingsPage />} />
-                </Routes>
-              )}
-            </div>
-          </main>
+                )}
+                
+                {isLoading ? (
+                  <div className="flex items-center justify-center h-32 lg:h-64">
+                    <div className="animate-spin rounded-full h-8 w-8 lg:h-12 lg:w-12 border-b-2 border-purple-600"></div>
+                  </div>
+                ) : (
+                  <Routes>
+                    <Route path="/" element={<Dashboard products={products} transactions={transactions} />} />
+                    <Route path="/products" element={<Products products={products} setProducts={setProducts} onStockEntry={handleAddTransaction} />} />
+                    <Route path="/pos" element={<POS products={products} onCheckout={handleAddTransaction} />} />
+                    <Route path="/transactions" element={<Transactions transactions={transactions} />} />
+                    <Route path="/reports" element={<Reports transactions={transactions} products={products} />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                  </Routes>
+                )}
+              </div>
+            </main>
+          </div>
         </div>
-      </div>
-    </ToastProvider>
-  </HashRouter>
+      </ToastProvider>
+    </HashRouter>
   );
 };
 
