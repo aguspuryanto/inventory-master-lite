@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Product, Transaction, TransactionItem, Receipt } from '../types';
 import { formatCurrency, generateId } from '../utils';
+import { TransactionReceiptPrinter } from '../components/TransactionReceiptPrinter';
 
 interface POSProps {
   products: Product[];
@@ -112,6 +113,35 @@ const POS: React.FC<POSProps> = ({ products, onCheckout }) => {
     setIsCheckoutOpen(false);
     setPaymentAmount('0');
     setShowReceipt(receipt);
+  };
+
+  const handlePrintReceipt = async () => {
+    if (!showReceipt) return;
+    
+    // Convert Receipt to Transaction format for TransactionReceiptPrinter
+    const transaction: Transaction = {
+      id: showReceipt.id,
+      type: 'OUT', // POS transactions are typically OUT (selling)
+      mainCategory: 'Penjualan',
+      subCategory: 'POS',
+      amount: showReceipt.total,
+      createdAt: showReceipt.date,
+      description: `Penjualan POS - ${showReceipt.items.length} item`,
+      items: showReceipt.items.map(item => ({
+        productId: item.productId,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        subtotal: item.subtotal
+      }))
+    };
+    
+    try {
+      const { printReceipt } = TransactionReceiptPrinter({ transaction });
+      await printReceipt();
+    } catch (error) {
+      console.error('Error printing receipt:', error);
+    }
   };
 
   return (
@@ -382,14 +412,23 @@ const POS: React.FC<POSProps> = ({ products, onCheckout }) => {
               </div>
             </div>
 
-            <div className="text-center mt-8 space-y-4">
+            <div className="text-center mt-8 space-y-3">
               <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Terima kasih telah berbelanja!</p>
-              <button 
-                onClick={() => setShowReceipt(null)}
-                className="w-full py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-colors"
-              >
-                Selesai
-              </button>
+              <div className="flex gap-3">
+                <button 
+                  onClick={handlePrintReceipt}
+                  className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Printer size={16} />
+                  Cetak Struk
+                </button>
+                <button 
+                  onClick={() => setShowReceipt(null)}
+                  className="flex-1 py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-colors"
+                >
+                  Selesai
+                </button>
+              </div>
             </div>
           </div>
         </div>

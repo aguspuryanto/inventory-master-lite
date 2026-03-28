@@ -11,7 +11,8 @@
     ],
     "skipLibCheck": true,
     "types": [
-      "node"
+      "node",
+      "./types/bluetooth"
     ],
     "moduleResolution": "bundler",
     "isolatedModules": true,

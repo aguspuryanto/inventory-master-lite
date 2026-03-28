@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Store, 
   User, 
@@ -14,37 +14,8 @@ import {
   Check,
   X
 } from 'lucide-react';
-
-interface StoreSettings {
-  name: string;
-  address: string;
-  phone: string;
-  email: string;
-  tax: number;
-}
-
-interface UserProfile {
-  name: string;
-  email: string;
-  role: string;
-  avatar: string;
-}
-
-interface Staff {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  phone: string;
-  status: 'active' | 'inactive';
-}
-
-interface PaymentMethod {
-  id: string;
-  name: string;
-  type: 'cash' | 'card' | 'ewallet' | 'bank_transfer';
-  isActive: boolean;
-}
+import { PrinterSettings, StoreSettings, UserProfile, Staff, PaymentMethod } from '../types';
+import { db } from '../services/db';
 
 const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState('store');
@@ -91,10 +62,17 @@ const Settings: React.FC = () => {
     { id: '6', name: 'Transfer Bank', type: 'bank_transfer', isActive: true }
   ]);
 
+  const [printerSettings, setPrinterSettings] = useState<PrinterSettings>({
+    paperSize: '58mm',
+    orientation: 'Portrait',
+    autoPrint: false
+  });
+
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [showAddPayment, setShowAddPayment] = useState(false);
   const [newStaff, setNewStaff] = useState<Partial<Staff>>({});
   const [newPayment, setNewPayment] = useState<Partial<PaymentMethod>>({});
+  const [isScanning, setIsScanning] = useState(false);
 
   const tabs = [
     { id: 'store', label: 'Pengaturan Toko', icon: Store },
@@ -104,6 +82,40 @@ const Settings: React.FC = () => {
     { id: 'staff', label: 'Kelola Staff', icon: Users },
     { id: 'payment', label: 'Metode Pembayaran', icon: CreditCard }
   ];
+
+  // Load printer settings from database
+  useEffect(() => {
+    const loadPrinterSettings = async () => {
+      try {
+        const settings = await db.getPrinterSettings();
+        if (settings) {
+          setPrinterSettings(settings);
+          localStorage.setItem('printerSettings', JSON.stringify(settings));
+        } else {
+          // Fallback to localStorage if no database settings
+          const savedPrinterSettings = localStorage.getItem('printerSettings');
+          if (savedPrinterSettings) {
+            const parsed = JSON.parse(savedPrinterSettings);
+            setPrinterSettings(parsed);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading printer settings:', error);
+        // Fallback to localStorage on error
+        const savedPrinterSettings = localStorage.getItem('printerSettings');
+        if (savedPrinterSettings) {
+          try {
+            const parsed = JSON.parse(savedPrinterSettings);
+            setPrinterSettings(parsed);
+          } catch (parseError) {
+            console.error('Error parsing saved printer settings:', parseError);
+          }
+        }
+      }
+    };
+    
+    loadPrinterSettings();
+  }, []);
 
   const handleSaveStoreSettings = () => {
     // Simpan pengaturan toko
@@ -167,6 +179,90 @@ const Settings: React.FC = () => {
 
   const handleDeletePayment = (id: string) => {
     setPaymentMethods(paymentMethods.filter(p => p.id !== id));
+  };
+
+  const handleScanBluetooth = async () => {
+    if (!navigator.bluetooth) {
+      alert('Bluetooth tidak didukung di browser ini. Gunakan Chrome, Edge, atau Opera.');
+      return;
+    }
+
+    setIsScanning(true);
+    try {
+      const device = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: [
+          '000018f0-0000-1000-8000-00805f9b34fb',
+          '0000180a-0000-1000-8000-00805f9b34fb',
+          '00001812-0000-1000-8000-00805f9b34fb',
+          '49535343-fe7d-4ae5-8fa9-9fafd205e455',
+          'generic_access',
+          'device_information'
+        ]
+      });
+
+      // Save printer settings
+      const updatedSettings = {
+        ...printerSettings,
+        deviceId: device.id,
+        deviceName: device.name || 'Unknown Device'
+      };
+      setPrinterSettings(updatedSettings);
+      
+      // Save to localStorage
+      localStorage.setItem('printerSettings', JSON.stringify(updatedSettings));
+      
+      alert(`Printer "${device.name}" berhasil disimpan!`);
+    } catch (error) {
+      console.error('Bluetooth scan error:', error);
+      if (error.name === 'NotFoundError') {
+        alert('Tidak ada perangkat Bluetooth yang dipilih.');
+      } else {
+        alert('Gagal memindai perangkat Bluetooth: ' + error.message);
+      }
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const handleTestPrint = async () => {
+    if (!printerSettings.deviceId) {
+      alert('Silakan pilih printer terlebih dahulu.');
+      return;
+    }
+
+    try {
+      // Create test transaction
+      const testTransaction = {
+        id: 'TEST-' + Date.now(),
+        type: 'OUT' as const,
+        mainCategory: 'TEST',
+        subCategory: 'Test Print',
+        amount: 10000,
+        createdAt: new Date().toISOString(),
+        description: 'Test Cetak Printer'
+      };
+
+      // Import and use the receipt printer
+      const TransactionReceiptPrinterModule = await import('../components/TransactionReceiptPrinter');
+      const { printReceipt } = TransactionReceiptPrinterModule.TransactionReceiptPrinter({ transaction: testTransaction });
+      await printReceipt();
+    } catch (error) {
+      console.error('Test print error:', error);
+      alert('Gagal mencetak: ' + error.message);
+    }
+  };
+
+  const handleSavePrinterSettings = async () => {
+    // localStorage.setItem('printerSettings', JSON.stringify(printerSettings));
+    console.log('Printer settings saved:', printerSettings);
+    try {
+      await db.setPrinterSettings(printerSettings);
+      alert('Pengaturan printer berhasil disimpan!');
+    } catch (error) {
+      console.error('Error saving printer settings:', error);
+      alert('Gagal menyimpan pengaturan printer');
+    }
   };
 
   const renderStoreSettings = () => (
@@ -354,43 +450,98 @@ const Settings: React.FC = () => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Printer Default
+              Printer Bluetooth
             </label>
-            <select className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-slate-700 dark:text-slate-100">
-              <option>EPON TM-U220</option>
-              <option>Canon PIXMA</option>
-              <option>HP LaserJet</option>
-            </select>
+            <div className="flex gap-2">
+              <select 
+                className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-slate-700 dark:text-slate-100"
+                value={printerSettings.deviceId || ''}
+                onChange={(e) => setPrinterSettings({...printerSettings, deviceId: e.target.value, deviceName: e.target.options[e.target.selectedIndex].text})}
+              >
+                <option value="">Pilih Printer...</option>
+                {printerSettings.deviceName && (
+                  <option value={printerSettings.deviceId}>{printerSettings.deviceName}</option>
+                )}
+              </select>
+              <button
+                onClick={handleScanBluetooth}
+                disabled={isScanning}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition-colors flex items-center gap-2"
+              >
+                {isScanning ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Scanning...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw size={16} />
+                    Scan
+                  </>
+                )}
+              </button>
+            </div>
+            {printerSettings.deviceName && (
+              <p className="text-xs text-green-600 dark:text-green-400">
+                ✓ Terhubung: {printerSettings.deviceName}
+              </p>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Kertas Struk
               </label>
-              <select className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-slate-700 dark:text-slate-100">
-                <option>58mm</option>
-                <option>80mm</option>
+              <select 
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-slate-700 dark:text-slate-100"
+                value={printerSettings.paperSize}
+                onChange={(e) => setPrinterSettings({...printerSettings, paperSize: e.target.value as '58mm' | '80mm'})}
+              >
+                <option value="58mm">58mm</option>
+                <option value="80mm">80mm</option>
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Orientasi
               </label>
-              <select className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-slate-700 dark:text-slate-100">
-                <option>Portrait</option>
-                <option>Landscape</option>
+              <select 
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-slate-700 dark:text-slate-100"
+                value={printerSettings.orientation}
+                onChange={(e) => setPrinterSettings({...printerSettings, orientation: e.target.value as 'Portrait' | 'Landscape'})}
+              >
+                <option value="Portrait">Portrait</option>
+                <option value="Landscape">Landscape</option>
               </select>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <input type="checkbox" id="autoPrint" className="rounded" />
+            <input 
+              type="checkbox" 
+              id="autoPrint" 
+              className="rounded"
+              checked={printerSettings.autoPrint}
+              onChange={(e) => setPrinterSettings({...printerSettings, autoPrint: e.target.checked})}
+            />
             <label htmlFor="autoPrint" className="text-sm text-slate-700 dark:text-slate-300">
               Cetak struk otomatis setelah transaksi
             </label>
           </div>
-          <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-            Test Print
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={handleTestPrint}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Test Print
+            </button>
+            <button 
+              onClick={handleSavePrinterSettings}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <Save size={16} className="inline mr-1" />
+              Simpan
+            </button>
+          </div>
         </div>
       </div>
     </div>

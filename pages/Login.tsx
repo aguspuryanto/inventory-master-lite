@@ -52,35 +52,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     
     setIsLoading(false);
   };
-
-  const createTestUser = async () => {
-    if (supabase) {
-      // Create user in Supabase Auth system (not custom table)
-      const { data, error } = await supabase.auth.signUp({
-        email: 'admin@example.com',
-        password: 'admin1234',
-        options: {
-          emailRedirectTo: undefined, // Disable email redirect for development
-          data: {
-            name: 'Admin Utama' // Store name in auth.users metadata
-          }
-        }
-      });
-      console.log('Create user response:', { data, error });
-      if (error) {
-        if (error.message.includes('rate limit')) {
-          alert('Rate limit exceeded. Wait a few minutes or create the user manually in Supabase dashboard.');
-        } else if (error.message.includes('already registered')) {
-          alert('User already exists in Supabase Auth! Try logging in directly.');
-        } else {
-          alert('Error creating user: ' + error.message);
-        }
-      } else {
-        alert('User created successfully in Supabase Auth! Check email for confirmation or try logging in.');
-      }
-    }
-  };
-
+  
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4 transition-colors duration-200">
       <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden">

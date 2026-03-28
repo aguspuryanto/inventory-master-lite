@@ -57,3 +57,42 @@ export interface Receipt {
   paymentAmount: number;
   changeAmount: number;
 }
+
+export interface PrinterSettings {
+  deviceId?: string;
+  deviceName?: string;
+  paperSize: '58mm' | '80mm';
+  orientation: 'Portrait' | 'Landscape';
+  autoPrint: boolean;
+}
+
+export interface StoreSettings {
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  tax: number;
+}
+
+export interface UserProfile {
+  name: string;
+  email: string;
+  role: string;
+  avatar: string;
+}
+
+export interface Staff {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  phone: string;
+  status: 'active' | 'inactive';
+}
+
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  type: 'cash' | 'card' | 'ewallet' | 'bank_transfer';
+  isActive: boolean;
+}

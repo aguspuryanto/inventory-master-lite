@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   Search, 
   Calendar, 
@@ -26,13 +26,23 @@ const Transactions: React.FC<TransactionsProps> = ({ transactions }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'ALL' | 'IN' | 'OUT'>('ALL');
   const [expandedTxId, setExpandedTxId] = useState<string | null>(null);
+  const hasLogged = useRef(false);
 
-  const filtered = transactions.filter(t => {
-    const matchesSearch = t.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = filterType === 'ALL' || t.type === filterType;
-    return matchesSearch && matchesType;
-  });
+  useEffect(() => {
+    if (!hasLogged.current && transactions && transactions.length > 0) {
+      console.log('Transactions loaded:', transactions.length, 'items');
+      hasLogged.current = true;
+    }
+  }, [transactions]);
+  
+  const filtered = useMemo(() => {
+    return transactions.filter((t) => {
+      const matchesSearch = t.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        t.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesType = filterType === 'ALL' || t.type === filterType;
+      return matchesSearch && matchesType;
+    });
+  }, [transactions, searchTerm, filterType]);
 
   const { exportToPDF } = TransactionPDFExport({ transactions, filtered });
 
@@ -202,10 +212,11 @@ const Transactions: React.FC<TransactionsProps> = ({ transactions }) => {
                                   const { printReceipt } = TransactionReceiptPrinter({ transaction: t });
                                   printReceipt();
                                 }}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                                disabled={!t.items || t.items.length === 0}
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
                               >
                                 <Printer size={16} />
-                                Cetak Struk
+                                {t.items && t.items.length > 0 ? 'Cetak Struk' : 'Tidak Ada Item'}
                               </button>
                             </div>
                           </div>

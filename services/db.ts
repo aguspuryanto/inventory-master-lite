@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { Product, Transaction, ProductVariant, TransactionItem } from '../types';
+import { Product, Transaction, ProductVariant, TransactionItem, StoreSettings, PrinterSettings } from '../types';
 
 export const db = {
   // Products
@@ -35,7 +35,7 @@ export const db = {
     }));
   },
 
-  async addProduct(product: Product) {
+  async addProduct(product: Product): Promise<Product> {
     if (!supabase) return product;
     
     const { data, error } = await supabase
@@ -58,7 +58,7 @@ export const db = {
     return data;
   },
 
-  async updateProduct(product: Product) {
+  async updateProduct(product: Product): Promise<Product> {
     if (!supabase) return product;
     
     const { data, error } = await supabase
@@ -81,7 +81,7 @@ export const db = {
     return data;
   },
 
-  async deleteProduct(id: string) {
+  async deleteProduct(id: string): Promise<void> {
     if (!supabase) return;
     
     const { error } = await supabase
@@ -226,7 +226,7 @@ export const db = {
     }));
   },
 
-  async addTransaction(tx: Transaction, items: TransactionItem[]) {
+  async addTransaction(tx: Transaction, items: TransactionItem[]): Promise<void> {
     if (!supabase) return;
     
     const { error } = await supabase
@@ -260,5 +260,87 @@ export const db = {
       
       if (itemsError) throw itemsError;
     }
+  },
+  
+  // Get Store settings
+  async getStoreSettings(): Promise<StoreSettings[]> {
+    if (!supabase) return [];
+    
+    const { data, error } = await supabase
+      .from('store_settings')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching store settings:', error);
+      return null;
+    }
+    
+    return data.map((item: any) => ({
+      name: item.name || '',
+      address: item.address || '',
+      phone: item.phone || '',
+      email: item.email || '',
+      tax: item.tax || 0
+    }));
+  },
+  
+  // Get printer settings
+  async getPrinterSettings(): Promise<PrinterSettings[]> {
+    if (!supabase) return [];
+    
+    const { data, error: fetchError } = await supabase
+      .from('printer_settings')
+      .select('*')
+      .order('id', { ascending: false });
+    
+    if (fetchError) {
+      console.error('Error fetching printer settings:', fetchError);
+      return [];
+    }
+    
+    return data.map((item: any) => {
+      // Try to parse device info from JSON format
+      let deviceId = '';
+      let deviceName = '';
+      
+      try {
+        if (item.default_printer) {
+          const deviceInfo = JSON.parse(item.default_printer);
+          deviceId = deviceInfo.id || '';
+          deviceName = deviceInfo.name || '';
+        }
+      } catch {
+        // Fallback to treating as plain device name
+        deviceName = item.default_printer || '';
+      }
+      
+      return {
+        deviceId,
+        deviceName,
+        paperSize: item.paper_size || '58mm',
+        orientation: item.orientation || 'Portrait',
+        autoPrint: item.auto_print_after_transaction || false
+      };
+    });
+  },
+
+  // Set printer settings
+  async setPrinterSettings(settings: PrinterSettings): Promise<void> {
+    if (!supabase) return;
+    
+    const { error } = await supabase
+      .from('printer_settings')
+      .upsert({
+        default_printer: JSON.stringify({
+          id: settings.deviceId,
+          name: settings.deviceName
+        }),
+        paper_size: settings.paperSize,
+        orientation: settings.orientation,
+        auto_print_after_transaction: settings.autoPrint
+      });
+      
+    if (error) throw error;
   }
 };
