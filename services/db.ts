@@ -247,7 +247,7 @@ export const db = {
     if (items && items.length > 0) {
       const itemsData = items.map(item => ({
         transaction_id: tx.id,
-        product_id: item.productId,
+        product_id: item.product_id,
         name: item.name,
         price: item.price,
         quantity: item.quantity,
@@ -265,15 +265,26 @@ export const db = {
         try {
           // Update stock untuk setiap item
           for (const item of tx.items) {
-            const { error: stockError } = await supabase.rpc('update_product_stock', {
-              p_product_id: item.productId,
+            console.log('Attempting to update stock for product:', item.product_id, 'quantity:', item.quantity);
+            
+            const { error: stockError, data } = await supabase.rpc('update_product_stock', {
+              p_product_id: item.product_id,
               p_quantity_change: -item.quantity // Kurangi stok untuk penjualan
             });
             
             if (stockError) {
-              console.error('Error updating stock for product', item.productId, ':', stockError);
+              console.error('Error updating stock for product', item.product_id, ':', stockError);
+              console.error('Full error details:', JSON.stringify(stockError, null, 2));
+            } else if (data && data.length > 0) {
+              const result = data[0];
+              if (result.success) {
+                console.log('Stock updated successfully for product', item.product_id);
+                console.log('Stock change:', result.old_stock, '->', result.new_stock);
+              } else {
+                console.error('Failed to update stock for product', item.product_id, ':', result.message);
+              }
             } else {
-              console.log('Stock updated for product', item.productId, '- quantity:', item.quantity);
+              console.log('Stock update completed for product', item.product_id, '- quantity:', item.quantity);
             }
           }
         } catch (stockUpdateError) {

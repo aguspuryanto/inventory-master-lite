@@ -76,7 +76,7 @@ const App: React.FC = () => {
         
         setProducts(dbProducts);
         setTransactions(dbTransactions);
-        
+
         // console.log('Products loaded from Supabase:', dbProducts.length);
       } catch (error) {
         console.error("Error loading data from Supabase:", error);

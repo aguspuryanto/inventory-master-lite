@@ -23,7 +23,7 @@ export interface Product {
 }
 
 export interface TransactionItem {
-  productId: string;
+  product_id: string;
   name: string;
   price: number;
   quantity: number;
