@@ -259,6 +259,27 @@ export const db = {
         .insert(itemsData);
       
       if (itemsError) throw itemsError;
+
+      // Kurangi stok produk untuk transaksi OUT (penjualan)
+      if (tx.type === 'OUT' && tx.items && tx.items.length > 0) {
+        try {
+          // Update stock untuk setiap item
+          for (const item of tx.items) {
+            const { error: stockError } = await supabase.rpc('update_product_stock', {
+              p_product_id: item.productId,
+              p_quantity_change: -item.quantity // Kurangi stok untuk penjualan
+            });
+            
+            if (stockError) {
+              console.error('Error updating stock for product', item.productId, ':', stockError);
+            } else {
+              console.log('Stock updated for product', item.productId, '- quantity:', item.quantity);
+            }
+          }
+        } catch (stockUpdateError) {
+          console.error('Failed to update stock:', stockUpdateError);
+        }
+      }
     }
   },
   
