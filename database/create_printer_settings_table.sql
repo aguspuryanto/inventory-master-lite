@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS printer_settings;
+
 -- Create printer_settings table
 CREATE TABLE IF NOT EXISTS printer_settings (
   id TEXT PRIMARY KEY DEFAULT '00000000-0000-0000-0000-000000000001',
