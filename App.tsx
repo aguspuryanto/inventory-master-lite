@@ -25,8 +25,6 @@ import Reports from './pages/Reports';
 import SettingsPage from './pages/Settings';
 
 import Auth from './components/Auth';
-import Login from './pages/Login';
-import Register from './pages/Register';
 import { Product, Transaction, TransactionItem } from './types';
 import { db } from './services/db';
 import { supabase } from './lib/supabase';
@@ -60,11 +58,10 @@ const App: React.FC = () => {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [transaction_items, setTransactionItems] = useState<TransactionItem[]>([]);
+  // const [transaction_items, setTransactionItems] = useState<TransactionItem[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSupabaseConfigured, setIsSupabaseConfigured] = useState(!!supabase);
   const [isLoading, setIsLoading] = useState(true);
-
 
   const loadData = useMemo(() => async () => {
     if (supabase) {
@@ -123,6 +120,22 @@ const App: React.FC = () => {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
+  // Bluetooth connection function - call this from user interaction
+  // const connectBluetooth = async () => {
+  //   try {
+  //     const device = await navigator.bluetooth.requestDevice({
+  //       filters: [{
+  //         services: [0x1234, 0x12345678, '99999999-0000-1000-8000-00805f9b34fb']
+  //       }]
+  //     });
+  //     console.log('Bluetooth device connected:', device);
+  //     return device;
+  //   } catch (error) {
+  //     console.error('Bluetooth connection failed:', error);
+  //     throw error;
+  //   }
+  // };
+
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -131,28 +144,6 @@ const App: React.FC = () => {
     }
     localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
   }, [isDarkMode]);
-
-  // Sync products with stock changes from transactions
-  const handleAddTransaction = async (newTx: Transaction, cart: TransactionItem[]) => {
-    // Optimistic UI update
-    setTransactions(prev => [newTx, ...prev]);
-    
-    // Note: With the new transaction structure, stock updates are handled
-    // differently since transactions don't contain item details
-    // You may need to implement separate stock management logic
-    // console.log(newTx);
-    // console.log(cart);
-
-    // Save to DB
-    if (supabase) {
-      try {
-        await db.addTransaction(newTx, cart);
-      } catch (error) {
-        console.error("Failed to save transaction to DB:", error);
-        alert("Gagal menyimpan transaksi ke database.");
-      }
-    }
-  };
 
   const handleAuthSuccess = (user: SupabaseUser) => {
     setSession({ user, access_token: '', refresh_token: '', expires_at: 0, expires_in: 0, token_type: 'bearer' });
@@ -255,6 +246,16 @@ const App: React.FC = () => {
                 >
                   {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
                 </button>
+                {/* <button 
+                  onClick={connectBluetooth}
+                  className="p-2 text-slate-500 dark:text-slate-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                  aria-label="Connect Bluetooth Device"
+                  title="Connect Bluetooth Printer"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                  </svg>
+                </button> */}
                 <button className="p-2 text-slate-500 dark:text-slate-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 relative">
                   <Bell size={20} />
                   <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-800"></span>
@@ -302,8 +303,8 @@ const App: React.FC = () => {
               ) : (
                 <Routes>
                   <Route path="/" element={<Dashboard products={products} transactions={transactions} />} />
-                  <Route path="/products" element={<Products products={products} setProducts={setProducts} onStockEntry={handleAddTransaction} />} />
-                  <Route path="/pos" element={<POS products={products} onCheckout={handleAddTransaction} />} />
+                  <Route path="/products" element={<Products products={products} setProducts={setProducts} />} />
+                  <Route path="/pos" element={<POS products={products} />} />
                   <Route path="/transactions" element={<Transactions transactions={transactions} />} />
                   <Route path="/reports" element={<Reports transactions={transactions} products={products} />} />
                   <Route path="/settings" element={<SettingsPage />} />

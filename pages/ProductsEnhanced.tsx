@@ -352,7 +352,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
   );
 
   return (
-    <div className="p-4 lg:p-8">
+    <div className="space-y-8 animate-in fade-in duration-500">
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -360,7 +360,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
             <p className="text-slate-500 dark:text-slate-400">Kelola master data produk dan stok inventaris</p>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <div className="flex items-center gap-2 mt-2">
+            {/* <div className="flex items-center gap-2 mt-2">
               <button
                 onClick={() => setIsOnlineMode(!isOnlineMode)}
                 className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
@@ -380,7 +380,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
                   {syncStatus}
                 </span>
               )}
-            </div>
+            </div> */}
             {/* Export/Import */}
             <button 
               onClick={handleExport}

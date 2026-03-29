@@ -19,19 +19,38 @@ import {
 import { Product, Transaction, TransactionItem, Receipt } from '../types';
 import { formatCurrency, generateId } from '../utils';
 import { TransactionReceiptPrinter } from '../components/TransactionReceiptPrinter';
+import { db } from '../services/db';
+import { supabase } from '../lib/supabase';
 
 interface POSProps {
   products: Product[];
-  onCheckout: (tx: Transaction) => void;
 }
 
-const POS: React.FC<POSProps> = ({ products, onCheckout }) => {
+const POS: React.FC<POSProps> = ({ products }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [cart, setCart] = useState<TransactionItem[]>([]);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('0');
   const [showReceipt, setShowReceipt] = useState<Receipt | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle transaction with stock update
+  const handleAddTransaction = async (newTx: Transaction, cart: TransactionItem[]) => {
+    // Optimistic UI update - handled by parent component if needed
+    console.log('Processing transaction:', newTx);
+    console.log('Cart items:', cart);
+
+    // Save to DB with stock update
+    if (supabase) {
+      try {
+        await db.addTransaction(newTx, cart);
+        console.log('Transaction saved successfully');
+      } catch (error) {
+        console.error("Failed to save transaction to DB:", error);
+        alert("Gagal menyimpan transaksi ke database.");
+      }
+    }
+  };
 
   const filteredProducts = products.filter(p => 
     (p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -49,16 +68,16 @@ const POS: React.FC<POSProps> = ({ products, onCheckout }) => {
 
   const addToCart = (product: Product) => {
     setCart(prev => {
-      const existing = prev.find(item => item.productId === product.id);
+      const existing = prev.find(item => item.product_id === product.id);
       if (existing) {
         if (existing.quantity >= product.stock) return prev;
-        return prev.map(item => item.productId === product.id 
+        return prev.map(item => item.product_id === product.id 
           ? { ...item, quantity: item.quantity + 1, subtotal: (item.quantity + 1) * item.price } 
           : item
         );
       }
       return [...prev, {
-        productId: product.id,
+        product_id: product.id,
         name: product.name,
         price: product.sellingPrice,
         quantity: 1,
@@ -68,11 +87,11 @@ const POS: React.FC<POSProps> = ({ products, onCheckout }) => {
     setSearchTerm('');
   };
 
-  const updateQuantity = (productId: string, delta: number) => {
+  const updateQuantity = (product_id: string, delta: number) => {
     setCart(prev => prev.map(item => {
-      if (item.productId === productId) {
+      if (item.product_id === product_id) {
         const newQty = Math.max(0, item.quantity + delta);
-        const product = products.find(p => p.id === productId);
+        const product = products.find(p => p.id === product_id);
         if (product && newQty > product.stock) return item;
         return { ...item, quantity: newQty, subtotal: newQty * item.price };
       }
@@ -96,7 +115,7 @@ const POS: React.FC<POSProps> = ({ products, onCheckout }) => {
       createdAt: new Date().toISOString(),
       description: `Transaksi POS - ${cart.length} item`
     };
-    // console.log(newTx);
+    console.log(newTx);
 
     const receipt: Receipt = {
       id: newTx.id,
@@ -106,9 +125,9 @@ const POS: React.FC<POSProps> = ({ products, onCheckout }) => {
       paymentAmount: amount,
       changeAmount: amount - total
     };
-    // console.log(cart);
+    console.log(cart);
 
-    onCheckout(newTx, cart);
+    handleAddTransaction(newTx, cart);
     setCart([]);
     setIsCheckoutOpen(false);
     setPaymentAmount('0');
@@ -128,7 +147,7 @@ const POS: React.FC<POSProps> = ({ products, onCheckout }) => {
       createdAt: showReceipt.date,
       description: `Penjualan POS - ${showReceipt.items.length} item`,
       items: showReceipt.items.map(item => ({
-        productId: item.productId,
+        product_id: item.product_id,
         name: item.name,
         price: item.price,
         quantity: item.quantity,
@@ -218,14 +237,14 @@ const POS: React.FC<POSProps> = ({ products, onCheckout }) => {
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-[300px]">
           {cart.map(item => (
-            <div key={item.productId} className="bg-white dark:bg-slate-800/80 rounded-2xl p-4 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col gap-3 group relative transition-all hover:shadow-md">
+            <div key={item.product_id} className="bg-white dark:bg-slate-800/80 rounded-2xl p-4 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col gap-3 group relative transition-all hover:shadow-md">
               <div className="flex justify-between items-start gap-2">
                 <div className="flex-1">
                   <h5 className="font-bold text-slate-800 dark:text-slate-100 text-sm leading-tight mb-1">{item.name}</h5>
                   <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Rp {formatCurrency(item.price)} / item</p>
                 </div>
                 <button 
-                  onClick={() => updateQuantity(item.productId, -item.quantity)} 
+                  onClick={() => updateQuantity(item.product_id, -item.quantity)} 
                   className="text-slate-300 hover:text-rose-500 dark:text-slate-500 dark:hover:text-rose-400 transition-colors p-1"
                   title="Hapus dari keranjang"
                 >
@@ -238,14 +257,14 @@ const POS: React.FC<POSProps> = ({ products, onCheckout }) => {
                 
                 <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-900/50 p-1 rounded-xl border border-slate-100 dark:border-slate-700">
                   <button 
-                    onClick={() => updateQuantity(item.productId, -1)} 
+                    onClick={() => updateQuantity(item.product_id, -1)} 
                     className="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300 shadow-sm transition-colors"
                   >
                     <Minus size={14} />
                   </button>
                   <span className="text-sm font-bold w-8 text-center text-slate-800 dark:text-slate-100">{item.quantity}</span>
                   <button 
-                    onClick={() => updateQuantity(item.productId, 1)} 
+                    onClick={() => updateQuantity(item.product_id, 1)} 
                     className="w-7 h-7 flex items-center justify-center bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300 shadow-sm transition-colors"
                   >
                     <Plus size={14} />
@@ -387,7 +406,7 @@ const POS: React.FC<POSProps> = ({ products, onCheckout }) => {
 
             <div className="border-t border-dashed border-slate-200 dark:border-slate-700 py-4 space-y-3">
               {showReceipt.items.map(item => (
-                <div key={item.productId} className="flex justify-between text-sm">
+                <div key={item.product_id} className="flex justify-between text-sm">
                   <div className="flex-1">
                     <p className="font-bold text-slate-700 dark:text-slate-200">{item.name}</p>
                     <p className="text-xs text-slate-400 dark:text-slate-500">{item.quantity} x Rp {formatCurrency(item.price)}</p>

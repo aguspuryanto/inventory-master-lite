@@ -18,7 +18,7 @@ import {
   Database,
   HardDrive
 } from 'lucide-react';
-import { Product, Transaction } from '../types';
+import { Product, Transaction, TransactionItem } from '../types';
 import { formatCurrency, parseFormattedNumber, generateId } from '../utils';
 import { db } from '../services/db';
 import { supabase } from '../lib/supabase';
@@ -29,10 +29,9 @@ import { useToast } from '../components/toast';
 interface ProductsProps {
   products: Product[];
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
-  onStockEntry: (tx: Transaction) => void;
 }
 
-const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry }) => {
+const Products: React.FC<ProductsProps> = ({ products, setProducts }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -41,6 +40,23 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
   const [syncStatus, setSyncStatus] = useState<string>('');
   const onlineStatus = useOnlineStatus();
   const { addToast } = useToast();
+
+  // Handle stock entry transaction
+  const handleStockEntry = async (tx: Transaction, cart: TransactionItem[] = []) => {
+    console.log('Processing stock entry:', tx);
+    console.log('Cart items:', cart);
+
+    // Save to DB with stock update
+    if (supabase) {
+      try {
+        await db.addTransaction(tx, cart);
+        console.log('Stock entry transaction saved successfully');
+      } catch (error) {
+        console.error("Failed to save stock entry transaction:", error);
+        alert("Gagal menyimpan transaksi stok ke database.");
+      }
+    }
+  };
   const [formData, setFormData] = useState({
     code: '',
     name: '',
@@ -116,7 +132,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
         // If stock increased manually, track as IN transaction
         if (productData.stock > editingProduct.stock) {
           const diff = productData.stock - editingProduct.stock;
-          onStockEntry({
+          handleStockEntry({
             id: generateId(),
             type: 'IN',
             mainCategory: 'Stok Masuk Manual',
@@ -152,7 +168,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
         
         // Track initial stock as IN transaction if > 0
         if (productData.stock > 0) {
-          onStockEntry({
+          handleStockEntry({
             id: generateId(),
             type: 'IN',
             mainCategory: 'Stok Awal',
@@ -351,7 +367,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Manajemen Produk</h1>
           <p className="text-slate-500 dark:text-slate-400">Kelola master data produk dan stok inventaris</p>
           <div className="flex items-center gap-2 mt-2">
-            <button
+            {/* <button
               onClick={toggleMode}
               className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
                 isOnlineMode 
@@ -369,7 +385,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
               <span className="text-xs text-purple-600 dark:text-purple-400 animate-pulse">
                 {syncStatus}
               </span>
-            )}
+            )} */}
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
