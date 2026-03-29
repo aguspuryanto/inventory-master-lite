@@ -77,14 +77,14 @@ const App: React.FC = () => {
         // console.log('Products loaded from Supabase:', dbProducts.length);
       } catch (error) {
         console.error("Error loading data from Supabase:", error);
-        console.error("Error details:", JSON.stringify(error, null, 2));
+        // console.error("Error details:", JSON.stringify(error, null, 2));
         
-        setProducts([]);
-        setTransactions([]);
+        // setProducts([]);
+        // setTransactions([]);
       }
     } else {
-      setProducts([]);
-      setTransactions([]);
+      // setProducts([]);
+      // setTransactions([]);
     }
     setIsLoading(false);
   }, []);
@@ -119,22 +119,6 @@ const App: React.FC = () => {
     }
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
-
-  // Bluetooth connection function - call this from user interaction
-  // const connectBluetooth = async () => {
-  //   try {
-  //     const device = await navigator.bluetooth.requestDevice({
-  //       filters: [{
-  //         services: [0x1234, 0x12345678, '99999999-0000-1000-8000-00805f9b34fb']
-  //       }]
-  //     });
-  //     console.log('Bluetooth device connected:', device);
-  //     return device;
-  //   } catch (error) {
-  //     console.error('Bluetooth connection failed:', error);
-  //     throw error;
-  //   }
-  // };
 
   useEffect(() => {
     if (isDarkMode) {

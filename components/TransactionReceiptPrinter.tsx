@@ -2,7 +2,7 @@ import React from 'react';
 import jsPDF from 'jspdf';
 import { Transaction } from '../types';
 import { formatCurrency, formatDate } from '../utils';
-import { db } from '@/services/db';
+import { db } from '../services/db';
 import { supabase } from '../lib/supabase';
 
 interface TransactionReceiptPrinterProps {
