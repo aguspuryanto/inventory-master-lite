@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { Product, Transaction, ProductVariant, TransactionItem, StoreSettings, PrinterSettings } from '../types';
+import { Product, Transaction, ProductVariant, TransactionItem, StoreSettings, PrinterSettings, ProductCategory } from '../types';
 
 export const db = {
   // Products
@@ -373,6 +373,114 @@ export const db = {
         auto_print_after_transaction: settings.autoPrint
       });
       
+    if (error) throw error;
+  },
+
+  // Product Categories
+  async getCategories(): Promise<ProductCategory[]> {
+    if (!supabase) return [];
+    
+    const { data, error } = await supabase
+      .from('product_categories')
+      .select('*')
+      .order('name', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching categories:', error);
+      return [];
+    }
+    
+    return data.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      description: cat.description || '',
+      createdAt: cat.created_at,
+      updatedAt: cat.updated_at
+    }));
+  },
+
+  async getCategory(id: string): Promise<ProductCategory | null> {
+    if (!supabase) return null;
+    
+    const { data, error } = await supabase
+      .from('product_categories')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching category:', error);
+      return null;
+    }
+    
+    return {
+      id: data.id,
+      name: data.name,
+      description: data.description || '',
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
+  },
+
+  async addCategory(category: Omit<ProductCategory, 'id' | 'createdAt' | 'updatedAt'>): Promise<ProductCategory> {
+    if (!supabase) throw new Error('Supabase not initialized');
+    
+    const newCategory = {
+      ...category,
+      id: crypto.randomUUID(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    
+    const { data, error } = await supabase
+      .from('product_categories')
+      .insert(newCategory)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return {
+      id: data.id,
+      name: data.name,
+      description: data.description || '',
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
+  },
+
+  async updateCategory(id: string, updates: Partial<Omit<ProductCategory, 'id' | 'createdAt' | 'updatedAt'>>): Promise<ProductCategory> {
+    if (!supabase) throw new Error('Supabase not initialized');
+    
+    const { data, error } = await supabase
+      .from('product_categories')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return {
+      id: data.id,
+      name: data.name,
+      description: data.description || '',
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
+  },
+
+  async deleteCategory(id: string): Promise<void> {
+    if (!supabase) return;
+    
+    const { error } = await supabase
+      .from('product_categories')
+      .delete()
+      .eq('id', id);
+    
     if (error) throw error;
   }
 };
