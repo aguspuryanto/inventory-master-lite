@@ -22,11 +22,12 @@ import { formatCurrency, generateId } from '../utils';
 interface POSProps {
   products: Product[];
   onCheckout: (tx: Transaction) => void;
+  cart: TransactionItem[];
+  setCart: (cart: TransactionItem[]) => void;
 }
 
-const POS: React.FC<POSProps> = ({ products, onCheckout }) => {
+const POS: React.FC<POSProps> = ({ products, onCheckout, cart, setCart }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [cart, setCart] = useState<TransactionItem[]>([]);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('0');
   const [showReceipt, setShowReceipt] = useState<Transaction | null>(null);
@@ -97,7 +98,6 @@ const POS: React.FC<POSProps> = ({ products, onCheckout }) => {
     };
 
     onCheckout(newTx);
-    setCart([]);
     setIsCheckoutOpen(false);
     setPaymentAmount('0');
     setShowReceipt(newTx);

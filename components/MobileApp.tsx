@@ -4,7 +4,7 @@ import {
   Home, Package, ShoppingCart, History, User, 
   Bell, Moon, Sun, ArrowUpRight, ArrowDownRight, 
   TrendingUp, Plus, Search, ChevronRight, LogOut,
-  ScanLine, Minus, X
+  ScanLine, Minus, X, CreditCard
 } from 'lucide-react';
 import { Product, Transaction, TransactionItem } from '../types';
 import { formatCurrency, generateId, parseFormattedNumber } from '../utils';
@@ -226,13 +226,15 @@ const MobileProducts = ({ products }: any) => {
   );
 };
 
-const MobilePOS = ({ products, onCheckout }: any) => {
-  const [cart, setCart] = useState<TransactionItem[]>([]);
+const MobilePOS = ({ products, onCheckout, cart, setCart }: any) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState('0');
 
   const filtered = products.filter((p: Product) => p.name.toLowerCase().includes(searchTerm.toLowerCase()) && p.stock > 0);
   const total = cart.reduce((acc, item) => acc + item.subtotal, 0);
+  const change = Number(paymentAmount.replace(/\D/g, '')) - total;
 
   const addToCart = (product: Product) => {
     setCart(prev => {
@@ -264,18 +266,29 @@ const MobilePOS = ({ products, onCheckout }: any) => {
   };
 
   const handleCheckout = () => {
+    setIsCheckoutOpen(false);
+    setIsPaymentOpen(true);
+    setPaymentAmount('0');
+  };
+
+  const handlePayment = () => {
+    const amount = Number(paymentAmount.replace(/\D/g, ''));
+    if (amount < total) {
+      alert('Pembayaran kurang!');
+      return;
+    }
+
     const newTx: Transaction = {
       id: `INV-${Date.now().toString().slice(-6)}`,
       date: new Date().toISOString(),
       type: 'OUT',
       items: [...cart],
       total,
-      paymentAmount: total,
-      changeAmount: 0
+      paymentAmount: amount,
+      changeAmount: amount - total
     };
     onCheckout(newTx);
-    setCart([]);
-    setIsCheckoutOpen(false);
+    setIsPaymentOpen(false);
     alert('Transaksi Berhasil!');
   };
 
@@ -368,6 +381,82 @@ const MobilePOS = ({ products, onCheckout }: any) => {
           </div>
         </div>
       )}
+
+      {/* Payment Modal */}
+      {isPaymentOpen && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsPaymentOpen(false)} />
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-full duration-300">
+            <div className="p-6 bg-purple-600 text-white">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold">Checkout Pembayaran</h3>
+                <button onClick={() => setIsPaymentOpen(false)}><X size={20} /></button>
+              </div>
+              <div className="text-center py-4">
+                <p className="text-purple-100 text-sm mb-1 uppercase tracking-widest font-bold">Total Tagihan</p>
+                <h2 className="text-4xl font-black">Rp {formatCurrency(total)}</h2>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase flex items-center gap-2">
+                  <CreditCard size={14} /> Jumlah Bayar
+                </label>
+                <input 
+                  autoFocus
+                  type="text"
+                  value={paymentAmount === '0' ? '' : formatCurrency(Number(paymentAmount.replace(/\D/g, '')))}
+                  onChange={e => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    setPaymentAmount(val || '0');
+                  }}
+                  placeholder="0"
+                  className="w-full text-3xl font-bold text-right py-4 px-4 border-2 border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-2xl focus:border-purple-500 outline-none transition-all"
+                />
+              </div>
+
+              <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl space-y-3">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-500 dark:text-slate-400">Kembalian</span>
+                  <span className={`text-xl font-bold ${change >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                    Rp {formatCurrency(Math.max(0, change))}
+                  </span>
+                </div>
+                {change < 0 && (
+                  <p className="text-rose-500 dark:text-rose-400 text-xs text-right font-medium animate-pulse">Kurang: Rp {formatCurrency(Math.abs(change))}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {[50000, 100000, 200000].map(amt => (
+                  <button 
+                    key={amt}
+                    onClick={() => setPaymentAmount(amt.toString())}
+                    className="py-3 border border-slate-200 dark:border-slate-600 rounded-xl font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                  >
+                    Rp {formatCurrency(amt)}
+                  </button>
+                ))}
+                <button 
+                  onClick={() => setPaymentAmount(total.toString())}
+                  className="py-3 bg-slate-100 dark:bg-slate-700 rounded-xl font-bold text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-600"
+                >
+                  Uang Pas
+                </button>
+              </div>
+
+              <button 
+                disabled={change < 0}
+                onClick={handlePayment}
+                className="w-full bg-purple-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-purple-700 shadow-xl shadow-purple-100 dark:shadow-none disabled:bg-slate-200 dark:disabled:bg-slate-700 transition-all"
+              >
+                Selesaikan Transaksi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -417,11 +506,13 @@ interface MobileAppProps {
   setIsDarkMode: (val: boolean) => void;
   session: Session | null;
   handleLogout: () => void;
+  cart: TransactionItem[];
+  setCart: (cart: TransactionItem[]) => void;
 }
 
 const MobileApp: React.FC<MobileAppProps> = ({ 
   products, setProducts, transactions, handleAddTransaction, 
-  isDarkMode, setIsDarkMode, session, handleLogout 
+  isDarkMode, setIsDarkMode, session, handleLogout, cart, setCart 
 }) => {
   const location = useLocation();
   
@@ -442,7 +533,7 @@ const MobileApp: React.FC<MobileAppProps> = ({
         <Routes>
           <Route path="/" element={<MobileDashboard products={products} transactions={transactions} />} />
           <Route path="/products" element={<MobileProducts products={products} setProducts={setProducts} onStockEntry={handleAddTransaction} />} />
-          <Route path="/pos" element={<MobilePOS products={products} onCheckout={handleAddTransaction} />} />
+          <Route path="/pos" element={<MobilePOS products={products} onCheckout={handleAddTransaction} cart={cart} setCart={setCart} />} />
           <Route path="/transactions" element={<div className="p-5"><TransactionList transactions={transactions} /></div>} />
           <Route path="/profile" element={<MobileProfile session={session} handleLogout={handleLogout} />} />
           {/* Fallback for reports route if accessed */}

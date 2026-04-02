@@ -25,7 +25,7 @@ import Transactions from './pages/Transactions';
 import Reports from './pages/Reports';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import { Product, Transaction } from './types';
+import { Product, Transaction, TransactionItem } from './types';
 import { db } from './services/db';
 import { supabase } from './lib/supabase';
 import { useDeviceDetect } from './hooks/useDeviceDetect';
@@ -67,6 +67,10 @@ const App: React.FC = () => {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [cart, setCart] = useState<TransactionItem[]>(() => {
+    const savedCart = localStorage.getItem('cart');
+    return savedCart ? JSON.parse(savedCart) : [];
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSupabaseConfigured, setIsSupabaseConfigured] = useState(!!supabase);
   const [isLoading, setIsLoading] = useState(true);
@@ -128,8 +132,15 @@ const App: React.FC = () => {
     localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
   }, [isDarkMode]);
 
+  useEffect(() => {
+    localStorage.setItem('cart', JSON.stringify(cart));
+  }, [cart]);
+
   // Sync products with stock changes from transactions
   const handleAddTransaction = async (newTx: Transaction) => {
+    // Clear cart after successful transaction
+    setCart([]);
+    
     // Optimistic UI update
     setTransactions(prev => [newTx, ...prev]);
     setProducts(prevProducts => {
@@ -201,7 +212,9 @@ const App: React.FC = () => {
           isDarkMode={isDarkMode} 
           setIsDarkMode={setIsDarkMode} 
           session={session} 
-          handleLogout={handleLogout} 
+          handleLogout={handleLogout}
+          cart={cart}
+          setCart={setCart}
         />
       </HashRouter>
     );
@@ -324,7 +337,7 @@ const App: React.FC = () => {
               <Routes>
                 <Route path="/" element={<Dashboard products={products} transactions={transactions} />} />
                 <Route path="/products" element={<Products products={products} setProducts={setProducts} onStockEntry={handleAddTransaction} />} />
-                <Route path="/pos" element={<POS products={products} onCheckout={handleAddTransaction} />} />
+                <Route path="/pos" element={<POS products={products} onCheckout={handleAddTransaction} cart={cart} setCart={setCart} />} />
                 <Route path="/transactions" element={<Transactions transactions={transactions} />} />
                 <Route path="/reports" element={<Reports transactions={transactions} products={products} />} />
               </Routes>
