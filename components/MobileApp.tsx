@@ -9,6 +9,7 @@ import {
 import { Product, Transaction, TransactionItem } from '../types';
 import { formatCurrency, generateId, parseFormattedNumber } from '../utils';
 import { Session } from '@supabase/supabase-js';
+import MobileSettings from './MobileSettings';
 
 // --- MODULAR COMPONENTS ---
 
@@ -41,7 +42,7 @@ export const BottomNav = () => {
     { to: '/products', icon: <Package size={22} />, label: 'Produk' },
     { to: '/pos', icon: <ShoppingCart size={24} />, label: 'Kasir', isFab: true },
     { to: '/transactions', icon: <History size={22} />, label: 'Riwayat' },
-    { to: '/profile', icon: <User size={22} />, label: 'Profil' },
+    { to: '/settings', icon: <User size={22} />, label: 'Pengaturan' },
   ];
 
   return (
@@ -478,10 +479,10 @@ const MobileProfile = ({ session, handleLogout }: any) => {
       </div>
 
       <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700/50 overflow-hidden">
-        <div className="p-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors cursor-pointer">
+        <NavLink to="/settings" className="p-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors">
           <span className="font-bold text-slate-700 dark:text-slate-200">Pengaturan Toko</span>
           <ChevronRight className="text-slate-400" size={20} />
-        </div>
+        </NavLink>
         <div className="p-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors cursor-pointer">
           <span className="font-bold text-slate-700 dark:text-slate-200">Laporan Lengkap</span>
           <ChevronRight className="text-slate-400" size={20} />
@@ -521,7 +522,7 @@ const MobileApp: React.FC<MobileAppProps> = ({
     if (path === '/products') return 'Produk';
     if (path === '/pos') return 'Kasir POS';
     if (path === '/transactions') return 'Riwayat';
-    if (path === '/profile') return 'Profil Saya';
+    if (path === '/settings') return 'Pengaturan';
     return 'InvMaster';
   };
 
@@ -535,9 +536,9 @@ const MobileApp: React.FC<MobileAppProps> = ({
           <Route path="/products" element={<MobileProducts products={products} setProducts={setProducts} onStockEntry={handleAddTransaction} />} />
           <Route path="/pos" element={<MobilePOS products={products} onCheckout={handleAddTransaction} cart={cart} setCart={setCart} />} />
           <Route path="/transactions" element={<div className="p-5"><TransactionList transactions={transactions} /></div>} />
-          <Route path="/profile" element={<MobileProfile session={session} handleLogout={handleLogout} />} />
+          <Route path="/settings" element={<MobileSettings session={session} handleLogout={handleLogout} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />} />
           {/* Fallback for reports route if accessed */}
-          <Route path="/reports" element={<MobileProfile session={session} handleLogout={handleLogout} />} />
+          <Route path="/reports" element={<MobileSettings session={session} handleLogout={handleLogout} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />} />
         </Routes>
       </main>
 
