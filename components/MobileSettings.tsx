@@ -15,6 +15,9 @@ import {
   Smartphone
 } from 'lucide-react';
 import { Session } from '@supabase/supabase-js';
+import ProductSettingsModal from './ProductSettingsModal';
+import PricingSettingsModal from './PricingSettingsModal';
+import PrinterSettingsModal from './PrinterSettingsModal';
 
 interface MobileSettingsProps {
   session: Session | null;
@@ -31,6 +34,48 @@ const MobileSettings: React.FC<MobileSettingsProps> = ({
 }) => {
   const [isStoreSettingsOpen, setIsStoreSettingsOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isProductSettingsOpen, setIsProductSettingsOpen] = useState(false);
+  const [isPricingSettingsOpen, setIsPricingSettingsOpen] = useState(false);
+  const [isPrinterSettingsOpen, setIsPrinterSettingsOpen] = useState(false);
+
+  // List of settings
+  const settingsList = [
+    {
+      icon: Store,
+      title: 'Pengaturan Toko',
+      description: 'Nama, alamat, dan kontak toko',
+      onClick: () => setIsStoreSettingsOpen(true),
+      display: true
+    },
+    {
+      icon: Package,
+      title: 'Pengaturan Produk',
+      description: 'Kategori, satuan, dan stok',
+      onClick: () => setIsProductSettingsOpen(true),
+      display: false
+    },
+    {
+      icon: DollarSign,
+      title: 'Pengaturan Harga',
+      description: 'Tipe harga dan diskon',
+      onClick: () => setIsPricingSettingsOpen(true),
+      display: false
+    },
+    {
+      icon: Bell,
+      title: 'Notifikasi',
+      description: 'Pengaturan notifikasi',
+      onClick: () => setIsNotificationOpen(true),
+      display: true
+    },
+    {
+      icon: Printer,
+      title: 'Printer & Struk',
+      description: 'Pengaturan printer',
+      onClick: () => setIsPrinterSettingsOpen(true),
+      display: true
+    }
+  ];
   
   // Store settings state
   const [storeName, setStoreName] = useState('InvMaster POS');
@@ -58,7 +103,7 @@ const MobileSettings: React.FC<MobileSettingsProps> = ({
   return (
     <div className="p-5 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Store Info Card */}
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700/50">
+      {/* <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700/50">
         <div className="flex items-center gap-4 mb-4">
           <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg">
             <Store size={32} />
@@ -84,26 +129,32 @@ const MobileSettings: React.FC<MobileSettingsProps> = ({
             <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Online</p>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Settings Menu */}
       <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700/50 overflow-hidden">
         {/* Store Settings */}
-        <button 
-          onClick={() => setIsStoreSettingsOpen(true)}
-          className="w-full p-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors"
-        >
+        {settingsList.map((setting, index) => (
+          setting.display && <button 
+            key={index}
+            onClick={setting.onClick}
+            className="w-full p-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors"
+          >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-purple-50 dark:bg-purple-500/10 rounded-xl flex items-center justify-center">
-              <Store className="text-purple-600 dark:text-purple-400" size={20} />
+              {React.createElement(setting.icon, { className: "text-purple-600 dark:text-purple-400", size: 20 })}
             </div>
-            <span className="font-bold text-slate-700 dark:text-slate-200">Pengaturan Toko</span>
+            <span className="font-bold text-slate-700 dark:text-slate-200">{setting.title}</span>
           </div>
           <ChevronRight className="text-slate-400" size={20} />
         </button>
-
+        ))}
+        
         {/* Product Settings */}
-        <button className="w-full p-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors">
+        {/* <button 
+          onClick={() => setIsProductSettingsOpen(true)}
+          className="w-full p-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors"
+        >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-50 dark:bg-blue-500/10 rounded-xl flex items-center justify-center">
               <Package className="text-blue-600 dark:text-blue-400" size={20} />
@@ -111,10 +162,13 @@ const MobileSettings: React.FC<MobileSettingsProps> = ({
             <span className="font-bold text-slate-700 dark:text-slate-200">Manajemen Produk</span>
           </div>
           <ChevronRight className="text-slate-400" size={20} />
-        </button>
+        </button> */}
 
         {/* Pricing */}
-        <button className="w-full p-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors">
+        {/* <button 
+          onClick={() => setIsPricingSettingsOpen(true)}
+          className="w-full p-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors"
+        >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl flex items-center justify-center">
               <DollarSign className="text-emerald-600 dark:text-emerald-400" size={20} />
@@ -122,10 +176,10 @@ const MobileSettings: React.FC<MobileSettingsProps> = ({
             <span className="font-bold text-slate-700 dark:text-slate-200">Harga & Diskon</span>
           </div>
           <ChevronRight className="text-slate-400" size={20} />
-        </button>
+        </button> */}
 
         {/* Notifications */}
-        <button 
+        {/* <button 
           onClick={() => setIsNotificationOpen(true)}
           className="w-full p-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors"
         >
@@ -136,10 +190,10 @@ const MobileSettings: React.FC<MobileSettingsProps> = ({
             <span className="font-bold text-slate-700 dark:text-slate-200">Notifikasi</span>
           </div>
           <ChevronRight className="text-slate-400" size={20} />
-        </button>
+        </button> */}
 
         {/* Printer */}
-        <button className="w-full p-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors">
+        {/* <button className="w-full p-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-rose-50 dark:bg-rose-500/10 rounded-xl flex items-center justify-center">
               <Printer className="text-rose-600 dark:text-rose-400" size={20} />
@@ -147,10 +201,10 @@ const MobileSettings: React.FC<MobileSettingsProps> = ({
             <span className="font-bold text-slate-700 dark:text-slate-200">Printer & Struk</span>
           </div>
           <ChevronRight className="text-slate-400" size={20} />
-        </button>
+        </button> */}
 
         {/* Security */}
-        <button className="w-full p-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors">
+        {/* <button className="w-full p-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl flex items-center justify-center">
               <Shield className="text-indigo-600 dark:text-indigo-400" size={20} />
@@ -158,10 +212,10 @@ const MobileSettings: React.FC<MobileSettingsProps> = ({
             <span className="font-bold text-slate-700 dark:text-slate-200">Keamanan</span>
           </div>
           <ChevronRight className="text-slate-400" size={20} />
-        </button>
+        </button> */}
 
         {/* Appearance */}
-        <button className="w-full p-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors">
+        {/* <button className="w-full p-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-pink-50 dark:bg-pink-500/10 rounded-xl flex items-center justify-center">
               <Palette className="text-pink-600 dark:text-pink-400" size={20} />
@@ -182,10 +236,10 @@ const MobileSettings: React.FC<MobileSettingsProps> = ({
           >
             {isDarkMode ? '🌙' : '☀️'}
           </button>
-        </button>
+        </button> */}
 
         {/* Language */}
-        <button className="w-full p-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors">
+        {/* <button className="w-full p-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-cyan-50 dark:bg-cyan-500/10 rounded-xl flex items-center justify-center">
               <Globe className="text-cyan-600 dark:text-cyan-400" size={20} />
@@ -196,7 +250,7 @@ const MobileSettings: React.FC<MobileSettingsProps> = ({
             </div>
           </div>
           <ChevronRight className="text-slate-400" size={20} />
-        </button>
+        </button> */}
 
         {/* Help */}
         <button className="w-full p-4 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors">
@@ -336,6 +390,24 @@ const MobileSettings: React.FC<MobileSettingsProps> = ({
           </div>
         </div>
       )}
+
+      {/* Product Settings Modal */}
+      <ProductSettingsModal 
+        isOpen={isProductSettingsOpen}
+        onClose={() => setIsProductSettingsOpen(false)}
+      />
+
+      {/* Pricing Settings Modal */}
+      <PricingSettingsModal 
+        isOpen={isPricingSettingsOpen}
+        onClose={() => setIsPricingSettingsOpen(false)}
+      />
+
+      {/* Printer Settings Modal */}
+      <PrinterSettingsModal 
+        isOpen={isPrinterSettingsOpen}
+        onClose={() => setIsPrinterSettingsOpen(false)}
+      />
     </div>
   );
 };
