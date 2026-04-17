@@ -177,5 +177,22 @@ export const db = {
         }
       }
     }
+  },
+
+  // store settings
+  async getStoreSettings() {
+    if (!supabase) return null;
+    
+    const { data, error } = await supabase
+      .from('store_settings')
+      .select('*')
+      .single();
+      
+    if (error) {
+      console.error('Error fetching settings:', error);
+      return null;
+    }
+    
+    return data;
   }
 };

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Product, Transaction, TransactionItem } from '../types';
 import { formatCurrency, generateId } from '../utils';
+import { db } from '../services/db';
 
 interface POSProps {
   products: Product[];
@@ -31,6 +32,7 @@ const POS: React.FC<POSProps> = ({ products, onCheckout, cart, setCart }) => {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('0');
   const [showReceipt, setShowReceipt] = useState<Transaction | null>(null);
+  const [storeSettings, setStoreSettings] = useState<any>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const filteredProducts = products.filter(p => 
@@ -45,6 +47,13 @@ const POS: React.FC<POSProps> = ({ products, onCheckout, cart, setCart }) => {
   useEffect(() => {
     // Focus search on mount
     searchInputRef.current?.focus();
+    
+    // Fetch store settings
+    const fetchStoreSettings = async () => {
+      const settings = await db.getStoreSettings();
+      setStoreSettings(settings);
+    };
+    fetchStoreSettings();
   }, []);
 
   const addToCart = (product: Product) => {
@@ -89,10 +98,17 @@ const POS: React.FC<POSProps> = ({ products, onCheckout, cart, setCart }) => {
 
     const newTx: Transaction = {
       id: `INV-${Date.now().toString().slice(-6)}`,
-      date: new Date().toISOString(),
+      created_at: new Date().toISOString(),
       type: 'OUT',
+      main_category: 'Penjualan',
+      sub_category: 'POS',
       items: [...cart],
-      total,
+      amount: total,
+      description: `Transaksi POS - ${new Date().toLocaleString('id-ID')}`
+    };
+
+    // Store payment info separately for receipt display
+    const paymentInfo = {
       paymentAmount: amount,
       changeAmount: amount - total
     };
@@ -101,11 +117,15 @@ const POS: React.FC<POSProps> = ({ products, onCheckout, cart, setCart }) => {
     setIsCheckoutOpen(false);
     setPaymentAmount('0');
     setShowReceipt(newTx);
+    
+    // Store payment info in a way we can access it in receipt
+    (newTx as any).paymentAmount = paymentInfo.paymentAmount;
+    (newTx as any).changeAmount = paymentInfo.changeAmount;
   };
 
   return (
-    <div className="h-full flex flex-col gap-6 lg:flex-row">
-      {/* Product Selection */}
+    <div className="h-full flex gap-6">
+      {/* Product Selection - Left Side */}
       <div className="flex-1 space-y-4">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
@@ -123,7 +143,7 @@ const POS: React.FC<POSProps> = ({ products, onCheckout, cart, setCart }) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto max-h-[calc(100vh-280px)] pr-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto max-h-[calc(100vh-120px)] pr-2">
           {filteredProducts.map(p => (
             <button
               key={p.id}
@@ -152,8 +172,8 @@ const POS: React.FC<POSProps> = ({ products, onCheckout, cart, setCart }) => {
         </div>
       </div>
 
-      {/* Cart Panel */}
-      <div className="w-full lg:w-96 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl flex flex-col overflow-hidden transition-colors duration-200">
+      {/* Cart Panel - Right Side */}
+      <div className="w-96 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl flex flex-col overflow-hidden transition-colors duration-200">
         <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
           <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <ShoppingCart size={20} className="text-purple-600 dark:text-purple-400" />
@@ -318,15 +338,15 @@ const POS: React.FC<POSProps> = ({ products, onCheckout, cart, setCart }) => {
               <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Printer size={32} />
               </div>
-              <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 uppercase">InvMaster POS</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Gedung Sudirman Lantai 4, Jakarta</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Telp: (021) 12345678</p>
+              <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 uppercase">{storeSettings?.name || 'InvMaster POS'}</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{storeSettings?.address || 'Gedung Sudirman Lantai 4, Jakarta'}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Telp: {storeSettings?.phone || '(021) 12345678'}</p>
             </div>
 
             <div className="border-t border-dashed border-slate-200 dark:border-slate-700 py-4 space-y-2">
               <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
                 <span>{showReceipt.id}</span>
-                <span>{new Date(showReceipt.date).toLocaleString()}</span>
+                <span>{new Date(showReceipt.created_at).toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
                 <span>Kasir: Admin Utama</span>
@@ -348,15 +368,15 @@ const POS: React.FC<POSProps> = ({ products, onCheckout, cart, setCart }) => {
             <div className="border-t border-dashed border-slate-200 dark:border-slate-700 py-4 space-y-2">
               <div className="flex justify-between text-sm font-bold text-slate-800 dark:text-slate-100">
                 <span>Total</span>
-                <span className="text-lg">Rp {formatCurrency(showReceipt.total)}</span>
+                <span className="text-lg">Rp {formatCurrency(showReceipt.amount)}</span>
               </div>
               <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400">
                 <span>Tunai</span>
-                <span>Rp {formatCurrency(showReceipt.paymentAmount || 0)}</span>
+                <span>Rp {formatCurrency((showReceipt as any).paymentAmount || 0)}</span>
               </div>
               <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400">
                 <span>Kembali</span>
-                <span>Rp {formatCurrency(showReceipt.changeAmount || 0)}</span>
+                <span>Rp {formatCurrency((showReceipt as any).changeAmount || 0)}</span>
               </div>
             </div>
 

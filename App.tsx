@@ -248,14 +248,14 @@ const App: React.FC = () => {
 
             <nav className="space-y-2">
               <SidebarItem to="/" icon={<LayoutDashboard size={20} />} label="Dashboard" onClick={() => setIsSidebarOpen(false)} />
-              <SidebarItem to="/products" icon={<Package size={20} />} label="Manajemen Barang" onClick={() => setIsSidebarOpen(false)} />
+              <SidebarItem to="/products" icon={<Package size={20} />} label="Master" onClick={() => setIsSidebarOpen(false)} />
               <SidebarItem to="/pos" icon={<ShoppingCart size={20} />} label="Kasir" onClick={() => setIsSidebarOpen(false)} />
-              <SidebarItem to="/transactions" icon={<History size={20} />} label="Riwayat Transaksi" onClick={() => setIsSidebarOpen(false)} />
+              <SidebarItem to="/transactions" icon={<History size={20} />} label="Transaksi" onClick={() => setIsSidebarOpen(false)} />
               <SidebarItem to="/reports" icon={<FileText size={20} />} label="Laporan" onClick={() => setIsSidebarOpen(false)} />
             </nav>
           </div>
           
-          <div className="absolute bottom-0 w-full p-6 border-t border-slate-100 dark:border-slate-700">
+          {/* <div className="absolute bottom-0 w-full p-6 border-t border-slate-100 dark:border-slate-700">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
@@ -278,7 +278,7 @@ const App: React.FC = () => {
                 <LogOut size={20} />
               </button>
             </div>
-          </div>
+          </div> */}
         </aside>
 
         {/* Main Content */}
@@ -315,6 +315,35 @@ const App: React.FC = () => {
                 <Bell size={20} />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-800"></span>
               </button>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center group relative">
+                    <User 
+                      size={20} 
+                      title={session?.user ? 'Kasir / Admin' : 'Super Admin'} 
+                      className="text-slate-400 dark:text-slate-300 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-colors cursor-pointer" 
+                    />
+                    <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-slate-800 dark:bg-slate-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                      {session?.user ? 'Kasir / Admin' : 'Super Admin'}
+                    </div>
+                  </div>
+                  {/* <div>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                      {session?.user?.user_metadata?.name || session?.user?.email || 'Admin Utama'}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {session?.user ? 'Kasir / Admin' : 'Super Admin'}
+                    </p>
+                  </div> */}
+                </div>
+                <button 
+                  onClick={handleLogout}
+                  className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
+                  title="Keluar"
+                >
+                  <LogOut size={20} />
+                </button>
+              </div>
             </div>
           </header>
 

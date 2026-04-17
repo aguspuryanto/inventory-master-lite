@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Search, 
   Calendar, 
@@ -28,13 +28,14 @@ const Transactions: React.FC<TransactionsProps> = ({ transactions }) => {
     setExpandedTxId(prev => prev === id ? null : id);
   };
 
-  const filtered = transactions.filter(t => {
-    const matchesSearch = t.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.items?.some(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesType = filterType === 'ALL' || t.type === filterType;
-    return matchesSearch && matchesType;
-  });
-  // console.log(filtered);
+  const filtered = useMemo(() => {
+    return transactions.filter(t => {
+      const matchesSearch = t.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        t.items?.some(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesType = filterType === 'ALL' || t.type === filterType;
+      return matchesSearch && matchesType;
+    });
+  }, [transactions, searchTerm, filterType]);
 
   return (
     <div className="space-y-6">
