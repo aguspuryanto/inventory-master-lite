@@ -34,6 +34,7 @@ const Transactions: React.FC<TransactionsProps> = ({ transactions }) => {
     const matchesType = filterType === 'ALL' || t.type === filterType;
     return matchesSearch && matchesType;
   });
+  // console.log(filtered);
 
   return (
     <div className="space-y-6">
@@ -65,7 +66,7 @@ const Transactions: React.FC<TransactionsProps> = ({ transactions }) => {
           <div>
             <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total Pembelian</p>
             <p className="text-xl font-bold text-slate-800 dark:text-slate-100">
-              Rp {formatCurrency(transactions.filter(t => t.type === 'IN').reduce((acc, t) => acc + t.total, 0))}
+              Rp {formatCurrency(transactions.filter(t => t.type === 'IN').reduce((acc, t) => acc + t.amount, 0))}
             </p>
           </div>
         </div>
@@ -76,7 +77,7 @@ const Transactions: React.FC<TransactionsProps> = ({ transactions }) => {
           <div>
             <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total Penjualan</p>
             <p className="text-xl font-bold text-slate-800 dark:text-slate-100">
-              Rp {formatCurrency(transactions.filter(t => t.type === 'OUT').reduce((acc, t) => acc + t.total, 0))}
+              Rp {formatCurrency(transactions.filter(t => t.type === 'OUT').reduce((acc, t) => acc + t.amount, 0))}
             </p>
           </div>
         </div>
@@ -128,7 +129,7 @@ const Transactions: React.FC<TransactionsProps> = ({ transactions }) => {
                     className={`hover:bg-slate-50/80 dark:hover:bg-slate-700/50 transition-colors group cursor-pointer ${expandedTxId === t.id ? 'bg-slate-50/80 dark:bg-slate-700/50' : ''}`}
                   >
                     <td className="px-6 py-4">
-                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{formatDate(t.date)}</p>
+                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{formatDate(t.created_at)}</p>
                       <p className="text-xs text-slate-400 dark:text-slate-500 font-mono">#{t.id}</p>
                     </td>
                     <td className="px-6 py-4">
@@ -146,7 +147,7 @@ const Transactions: React.FC<TransactionsProps> = ({ transactions }) => {
                       <p className="text-xs text-slate-400 dark:text-slate-500">{t.items?.length || 0} item unik</p>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Rp {formatCurrency(t.total)}</p>
+                      <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Rp {formatCurrency(t.amount)}</p>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button className="p-2 text-slate-400 dark:text-slate-500 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-all">
@@ -182,7 +183,7 @@ const Transactions: React.FC<TransactionsProps> = ({ transactions }) => {
                               <tfoot className="border-t border-slate-100 dark:border-slate-700">
                                 <tr>
                                   <td colSpan={3} className="pt-2 text-right font-bold text-slate-600 dark:text-slate-400">Total Transaksi:</td>
-                                  <td className="pt-2 text-right font-bold text-slate-800 dark:text-slate-100">Rp {formatCurrency(t.total)}</td>
+                                  <td className="pt-2 text-right font-bold text-slate-800 dark:text-slate-100">Rp {formatCurrency(t.amount)}</td>
                                 </tr>
                               </tfoot>
                             </table>

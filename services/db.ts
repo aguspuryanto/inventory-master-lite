@@ -93,7 +93,7 @@ export const db = {
         *,
         transaction_items (*)
       `)
-      .order('date', { ascending: false });
+      .order('created_at', { ascending: false });
       
     if (error) {
       console.error('Error fetching transactions:', error);
@@ -102,12 +102,14 @@ export const db = {
     
     return data.map(t => ({
       id: t.id,
-      date: t.date,
       type: t.type as 'IN' | 'OUT',
-      total: Number(t.total),
-      paymentAmount: t.payment_amount ? Number(t.payment_amount) : undefined,
-      changeAmount: t.change_amount ? Number(t.change_amount) : undefined,
-      note: t.note,
+      main_category: t.main_category,
+      sub_category: t.sub_category,
+      amount: Number(t.amount),
+      // paymentAmount: t.payment_amount ? Number(t.payment_amount) : undefined,
+      // changeAmount: t.change_amount ? Number(t.change_amount) : undefined,
+      description: t.description,
+      created_at: t.created_at,
       items: t.transaction_items.map((i: any) => ({
         productId: i.product_id,
         name: i.name,
@@ -130,9 +132,9 @@ export const db = {
         type: tx.type,
         main_category: 'Penjualan',
         sub_category: 'POS',
-        amount: tx.total,
-        description: tx.note,
-        created_at: tx.date
+        amount: tx.amount,
+        description: tx.description,
+        created_at: tx.created_at
       });
       
     if (txError) throw txError;

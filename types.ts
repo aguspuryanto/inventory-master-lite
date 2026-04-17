@@ -22,13 +22,13 @@ export type TransactionType = 'IN' | 'OUT';
 
 export interface Transaction {
   id: string;
-  date: string;
   type: TransactionType;
+  main_category: string;
+  sub_category: string;
+  amount: number;
+  description: string;
+  created_at: string;
   items: TransactionItem[];
-  total: number;
-  paymentAmount?: number;
-  changeAmount?: number;
-  note?: string;
 }
 
 export interface MonthlyStats {

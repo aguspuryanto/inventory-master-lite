@@ -14,10 +14,23 @@ export const parseFormattedNumber = (value: string): number => {
 export const generateId = () => Math.random().toString(36).substr(2, 9).toUpperCase();
 
 export const formatDate = (date: string | Date) => {
-  return new Intl.DateTimeFormat('id-ID', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(date));
+  try {
+    const dateObj = new Date(date);
+    
+    // Check if the date is valid
+    if (isNaN(dateObj.getTime())) {
+      console.warn('Invalid date value:', date);
+      return 'Tanggal tidak valid';
+    }
+    
+    return new Intl.DateTimeFormat('id-ID', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(dateObj);
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Format tanggal error';
+  }
 };
 
 export const isMobileDevice = (): boolean => {
