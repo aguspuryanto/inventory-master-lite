@@ -122,16 +122,17 @@ export const db = {
     if (!supabase) return;
     
     // 1. Insert Transaction
+    // id, type, main_category, sub_category, amount, description, created_at
     const { error: txError } = await supabase
       .from('transactions')
       .insert({
         id: tx.id,
-        date: tx.date,
         type: tx.type,
-        total: tx.total,
-        payment_amount: tx.paymentAmount,
-        change_amount: tx.changeAmount,
-        note: tx.note
+        main_category: 'Penjualan',
+        sub_category: 'POS',
+        amount: tx.total,
+        description: tx.note,
+        created_at: tx.date
       });
       
     if (txError) throw txError;
