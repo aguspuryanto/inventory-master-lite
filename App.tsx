@@ -33,13 +33,13 @@ import { Session } from '@supabase/supabase-js';
 import MobileApp from './components/MobileApp';
 
 // Initial Mock Data
-const INITIAL_PRODUCTS: Product[] = [
-  { id: '1', code: 'BRG001', name: 'Premium Arabica Coffee', barcode: '899123456001', purchasePrice: 45000, sellingPrice: 65000, stock: 45, category: 'Beverage' },
-  { id: '2', code: 'BRG002', name: 'Silk Road Tea', barcode: '899123456002', purchasePrice: 20000, sellingPrice: 35000, stock: 12, category: 'Beverage' },
-  { id: '3', code: 'BRG003', name: 'Organic Honey 500ml', barcode: '899123456003', purchasePrice: 75000, sellingPrice: 98000, stock: 5, category: 'Food' },
-  { id: '4', code: 'BRG004', name: 'Dark Chocolate Bar', barcode: '899123456004', purchasePrice: 15000, sellingPrice: 25000, stock: 120, category: 'Food' },
-  { id: '5', code: 'BRG005', name: 'Artisan Sourdough', barcode: '899123456005', purchasePrice: 18000, sellingPrice: 32000, stock: 2, category: 'Food' },
-];
+// const INITIAL_PRODUCTS: Product[] = [
+//   { id: '1', code: 'BRG001', name: 'Premium Arabica Coffee', barcode: '899123456001', purchasePrice: 45000, sellingPrice: 65000, stock: 45, category: 'Beverage' },
+//   { id: '2', code: 'BRG002', name: 'Silk Road Tea', barcode: '899123456002', purchasePrice: 20000, sellingPrice: 35000, stock: 12, category: 'Beverage' },
+//   { id: '3', code: 'BRG003', name: 'Organic Honey 500ml', barcode: '899123456003', purchasePrice: 75000, sellingPrice: 98000, stock: 5, category: 'Food' },
+//   { id: '4', code: 'BRG004', name: 'Dark Chocolate Bar', barcode: '899123456004', purchasePrice: 15000, sellingPrice: 25000, stock: 120, category: 'Food' },
+//   { id: '5', code: 'BRG005', name: 'Artisan Sourdough', barcode: '899123456005', purchasePrice: 18000, sellingPrice: 32000, stock: 2, category: 'Food' },
+// ];
 
 const SidebarItem: React.FC<{ to: string, icon: React.ReactNode, label: string, onClick?: () => void }> = ({ to, icon, label, onClick }) => {
   return (
@@ -65,8 +65,9 @@ const App: React.FC = () => {
   });
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [storeSettings, setStoreSettings] = useState<any>(null);
   const [cart, setCart] = useState<TransactionItem[]>(() => {
     const savedCart = localStorage.getItem('cart');
     return savedCart ? JSON.parse(savedCart) : [];
@@ -80,12 +81,14 @@ const App: React.FC = () => {
     const loadData = async () => {
       if (supabase) {
         try {
-          const [dbProducts, dbTransactions] = await Promise.all([
+          const [storeSettings, dbProducts, dbTransactions] = await Promise.all([
+            db.getStoreSettings(),
             db.getProducts(),
             db.getTransactions()
           ]);
-          setProducts(dbProducts.length > 0 ? dbProducts : INITIAL_PRODUCTS);
-          setTransactions(dbTransactions);
+          setStoreSettings(storeSettings); // Store settings from database
+          setProducts(dbProducts); // Load products from database
+          setTransactions(dbTransactions); // Load transactions from database
         } catch (error) {
           console.error("Error loading data from Supabase:", error);
         }
@@ -242,7 +245,7 @@ const App: React.FC = () => {
                 <Package className="text-white h-6 w-6" />
               </div>
               <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                InvMaster
+                {storeSettings?.name || 'Store'}
               </h1>
             </div>
 
