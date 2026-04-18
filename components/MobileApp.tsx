@@ -271,9 +271,13 @@ const MobilePOS = ({ products, onCheckout, cart, setCart }: any) => {
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('0');
 
+  // Discount state
+  const [discount, setDiscount] = useState('0');
+
   const filtered = products.filter((p: Product) => p.name.toLowerCase().includes(searchTerm.toLowerCase()) && p.stock > 0);
   const total = cart.reduce((acc, item) => acc + item.subtotal, 0);
-  const change = Number(paymentAmount.replace(/\D/g, '')) - total;
+  const discountAmount = total * (Number(discount) / 100);
+  const change = Number(paymentAmount.replace(/\D/g, '')) - (total - discountAmount);
 
   const addToCart = (product: Product) => {
     setCart(prev => {
@@ -409,10 +413,28 @@ const MobilePOS = ({ products, onCheckout, cart, setCart }: any) => {
             </div>
 
             <div className="p-5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-slate-500 dark:text-slate-400 font-medium">Total Pembayaran</span>
-                <span className="text-2xl font-black text-purple-600 dark:text-purple-400">Rp {formatCurrency(total)}</span>
-              </div>
+              {/* Show discount breakdown if discount is applied */}
+              {discountAmount > 0 ? (
+                <div className="space-y-2 mb-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 dark:text-slate-400 font-medium">SubTotal:</span>
+                    <span className="text-lg font-bold text-slate-800 dark:text-slate-100">Rp {formatCurrency(total)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 dark:text-slate-400 font-medium">Diskon ({discount}%):</span>
+                    <span className="text-lg font-bold text-red-600 dark:text-red-400">- Rp {formatCurrency(discountAmount)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 dark:text-slate-400 font-medium">Total Pembayaran:</span>
+                    <span className="text-2xl font-black text-purple-600 dark:text-purple-400">Rp {formatCurrency(total - discountAmount)}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">Total Pembayaran</span>
+                  <span className="text-2xl font-black text-purple-600 dark:text-purple-400">Rp {formatCurrency(total)}</span>
+                </div>
+              )}
               <button onClick={handleCheckout} className="w-full bg-purple-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-purple-700 shadow-xl shadow-purple-200 dark:shadow-none active:scale-95 transition-transform">
                 Proses Pembayaran
               </button>
@@ -433,7 +455,10 @@ const MobilePOS = ({ products, onCheckout, cart, setCart }: any) => {
               </div>
               <div className="text-center py-4">
                 <p className="text-purple-100 text-sm mb-1 uppercase tracking-widest font-bold">Total Tagihan</p>
-                <h2 className="text-4xl font-black">Rp {formatCurrency(total)}</h2>
+                <h2 className="text-4xl font-black">Rp {formatCurrency(total - discountAmount)}</h2>
+                {discountAmount > 0 && (
+                  <p className="text-purple-200 text-xs mt-1">Subtotal: Rp {formatCurrency(total)} - Diskon: Rp {formatCurrency(discountAmount)}</p>
+                )}
               </div>
             </div>
 
@@ -478,11 +503,31 @@ const MobilePOS = ({ products, onCheckout, cart, setCart }: any) => {
                   </button>
                 ))}
                 <button 
-                  onClick={() => setPaymentAmount(total.toString())}
+                  onClick={() => setPaymentAmount((total - discountAmount).toString())}
                   className="py-3 bg-slate-100 dark:bg-slate-700 rounded-xl font-bold text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-600"
                 >
                   Uang Pas
                 </button>
+              </div>
+
+              {/* Discount Section */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl space-y-3">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-500 dark:text-slate-400">Diskon (%)</span>
+                  <input 
+                    type="number" 
+                    value={discount}
+                    onChange={(e) => setDiscount(e.target.value)}
+                    className="w-24 px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-xl font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                  />
+                </div>
+                {/* Show discount amount */}
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-500 dark:text-slate-400">Diskon Amount</span>
+                  <span className="font-bold text-slate-600 dark:text-slate-300">
+                    Rp {formatCurrency(discountAmount)}
+                  </span>
+                </div>
               </div>
 
               <button 
