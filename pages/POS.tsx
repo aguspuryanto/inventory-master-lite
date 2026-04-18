@@ -44,6 +44,10 @@ const POS: React.FC<POSProps> = ({ products, onCheckout, cart, setCart }) => {
   const total = cart.reduce((acc, item) => acc + item.subtotal, 0);
   const change = Number(paymentAmount.replace(/\D/g, '')) - total;
 
+  // Diskon state
+  const [discount, setDiscount] = useState('0');
+  const discountAmount = total * (Number(discount) / 100);
+
   useEffect(() => {
     // Focus search on mount
     searchInputRef.current?.focus();
@@ -91,7 +95,12 @@ const POS: React.FC<POSProps> = ({ products, onCheckout, cart, setCart }) => {
 
   const handleCheckout = () => {
     const amount = Number(paymentAmount.replace(/\D/g, ''));
-    if (amount < total) {
+    
+    // Apply discount
+    const discountAmount = (total * Number(discount)) / 100;
+    const totalAfterDiscount = total - discountAmount;
+    
+    if (amount < totalAfterDiscount) {
       alert('Pembayaran kurang!');
       return;
     }
@@ -103,14 +112,16 @@ const POS: React.FC<POSProps> = ({ products, onCheckout, cart, setCart }) => {
       main_category: 'Penjualan',
       sub_category: 'POS',
       items: [...cart],
-      amount: total,
-      description: `Transaksi POS - ${new Date().toLocaleString('id-ID')}`
+      amount: totalAfterDiscount,
+      description: `Transaksi POS - ${new Date().toLocaleString('id-ID')}`,
+      discount: Number(discount),
+      discount_amount: discountAmount
     };
 
     // Store payment info separately for receipt display
     const paymentInfo = {
       paymentAmount: amount,
-      changeAmount: amount - total
+      changeAmount: amount - totalAfterDiscount
     };
 
     onCheckout(newTx);
@@ -315,6 +326,26 @@ const POS: React.FC<POSProps> = ({ products, onCheckout, cart, setCart }) => {
                 >
                   Uang Pas
                 </button>
+              </div>
+
+              {/* Tambahkan Diskon, by input */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl space-y-3">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-500 dark:text-slate-400">Diskon (%)</span>
+                  <input 
+                    type="number" 
+                    value={discount}
+                    onChange={(e) => setDiscount(e.target.value)}
+                    className="w-24 px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-xl font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                  />
+                </div>
+                {/* Tampilkan diskon amount */}
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-500 dark:text-slate-400">Diskon Amount</span>
+                  <span className="font-bold text-slate-600 dark:text-slate-300">
+                    Rp {formatCurrency(discountAmount)}
+                  </span>
+                </div>
               </div>
 
               <button 

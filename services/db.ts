@@ -106,9 +106,9 @@ export const db = {
       main_category: t.main_category,
       sub_category: t.sub_category,
       amount: Number(t.amount),
-      // paymentAmount: t.payment_amount ? Number(t.payment_amount) : undefined,
-      // changeAmount: t.change_amount ? Number(t.change_amount) : undefined,
       description: t.description,
+      discount: t.discount,
+      discount_amount: t.discount_amount,
       created_at: t.created_at,
       items: t.transaction_items.map((i: any) => ({
         productId: i.product_id,
@@ -125,6 +125,7 @@ export const db = {
     
     // 1. Insert Transaction
     // id, type, main_category, sub_category, amount, description, created_at
+    // tambah kolom, discount, discount_amount
     const { error: txError } = await supabase
       .from('transactions')
       .insert({
@@ -134,6 +135,8 @@ export const db = {
         sub_category: 'POS',
         amount: tx.amount,
         description: tx.description,
+        discount: tx.discount,
+        discount_amount: tx.discount_amount,
         created_at: tx.created_at
       });
       

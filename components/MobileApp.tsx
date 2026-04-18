@@ -94,30 +94,65 @@ export const CardSummary = ({ title, amount, trend, isPositive, icon }: any) => 
   </div>
 );
 
-export const TransactionList = ({ transactions }: { transactions: Transaction[] }) => (
+export const TransactionList = ({ transactions }: { transactions: Transaction[] }) => {
+  const [expandedTxId, setExpandedTxId] = useState<string | null>(null);
+
+  const toggleExpand = (id: string) => {
+    setExpandedTxId(prev => prev === id ? null : id);
+  };
+
+  return (
   <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-sm border border-slate-100 dark:border-slate-700/50">
     <div className="flex items-center justify-between mb-5">
       <h3 className="font-bold text-slate-800 dark:text-slate-100">Transaksi Terakhir</h3>
-      <button className="text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10 px-3 py-1.5 rounded-full">Lihat Semua</button>
+      {/* <button className="text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10 px-3 py-1.5 rounded-full">Lihat Semua</button> */}
     </div>
     <div className="space-y-4">
       {transactions.slice(0, 5).map(t => (
-        <div key={t.id} className="flex items-center justify-between group active:scale-[0.98] transition-transform cursor-pointer">
-          <div className="flex items-center gap-3">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${t.type === 'IN' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400'}`}>
-              {t.type === 'IN' ? <ArrowDownRight size={20} strokeWidth={2.5} /> : <ArrowUpRight size={20} strokeWidth={2.5} />}
+        <div key={t.id}>
+          <div 
+            onClick={() => toggleExpand(t.id)}
+            className={`flex items-center justify-between group active:scale-[0.98] transition-transform cursor-pointer ${expandedTxId === t.id ? 'mb-2' : ''}`}
+          >
+            <div className="flex items-center gap-3">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${t.type === 'IN' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400'}`}>
+                {t.type === 'IN' ? <ArrowDownRight size={20} strokeWidth={2.5} /> : <ArrowUpRight size={20} strokeWidth={2.5} />}
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{t.type === 'IN' ? 'Barang Masuk' : 'Penjualan'}</p>
+                <p className="text-xs font-medium text-slate-400 dark:text-slate-500">{new Date(t.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{t.type === 'IN' ? 'Barang Masuk' : 'Penjualan'}</p>
-              <p className="text-xs font-medium text-slate-400 dark:text-slate-500">{new Date(t.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })}</p>
+            <div className="text-right">
+              <p className={`text-sm font-black ${t.type === 'IN' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-100'}`}>
+                {t.type === 'IN' ? '-' : '+'}Rp {formatCurrency(t.amount)}
+              </p>
+              <p className="text-xs font-medium text-slate-400 dark:text-slate-500">{t.items.length} item</p>
             </div>
           </div>
-          <div className="text-right">
-            <p className={`text-sm font-black ${t.type === 'IN' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-100'}`}>
-              {t.type === 'IN' ? '-' : '+'}Rp {formatCurrency(t.amount)}
-            </p>
-            <p className="text-xs font-medium text-slate-400 dark:text-slate-500">{t.items.length} item</p>
-          </div>
+          
+          {expandedTxId === t.id && (
+            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-4 mt-2 border border-slate-100 dark:border-slate-700">
+              <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-3">Rincian Item</h4>
+              <div className="space-y-2">
+                {t.items?.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-sm">
+                    <div className="flex-1">
+                      <p className="font-medium text-slate-700 dark:text-slate-300">{item.name}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">Rp {formatCurrency(item.price)} × {item.quantity}</p>
+                    </div>
+                    <p className="font-bold text-slate-800 dark:text-slate-100">Rp {formatCurrency(item.subtotal)}</p>
+                  </div>
+                ))}
+                <div className="border-t border-slate-200 dark:border-slate-700 pt-2 mt-2">
+                  <div className="flex items-center justify-between text-sm font-bold">
+                    <span className="text-slate-600 dark:text-slate-400">Total:</span>
+                    <span className="text-slate-800 dark:text-slate-100">Rp {formatCurrency(t.amount)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ))}
       {transactions.length === 0 && (
@@ -130,7 +165,8 @@ export const TransactionList = ({ transactions }: { transactions: Transaction[] 
       )}
     </div>
   </div>
-);
+  );
+};
 
 // --- PAGES ---
 
@@ -511,11 +547,12 @@ interface MobileAppProps {
   handleLogout: () => void;
   cart: TransactionItem[];
   setCart: (cart: TransactionItem[]) => void;
+  storeSettings: any;
 }
 
 const MobileApp: React.FC<MobileAppProps> = ({ 
   products, setProducts, transactions, handleAddTransaction, 
-  isDarkMode, setIsDarkMode, session, handleLogout, cart, setCart 
+  isDarkMode, setIsDarkMode, session, handleLogout, cart, setCart, storeSettings 
 }) => {
   const location = useLocation();
   
@@ -538,9 +575,9 @@ const MobileApp: React.FC<MobileAppProps> = ({
           <Route path="/products" element={<MobileProducts products={products} setProducts={setProducts} onStockEntry={handleAddTransaction} />} />
           <Route path="/pos" element={<MobilePOS products={products} onCheckout={handleAddTransaction} cart={cart} setCart={setCart} />} />
           <Route path="/transactions" element={<div className="p-5"><TransactionList transactions={transactions} /></div>} />
-          <Route path="/settings" element={<MobileSettings session={session} handleLogout={handleLogout} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />} />
+          <Route path="/settings" element={<MobileSettings session={session} handleLogout={handleLogout} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} storeSettings={storeSettings} />} />
           {/* Fallback for reports route if accessed */}
-          <Route path="/reports" element={<MobileSettings session={session} handleLogout={handleLogout} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />} />
+          <Route path="/reports" element={<MobileSettings session={session} handleLogout={handleLogout} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} storeSettings={storeSettings} />} />
         </Routes>
       </main>
 

@@ -24,13 +24,15 @@ interface MobileSettingsProps {
   handleLogout: () => void;
   isDarkMode: boolean;
   setIsDarkMode: (val: boolean) => void;
+  storeSettings: any;
 }
 
 const MobileSettings: React.FC<MobileSettingsProps> = ({ 
   session, 
   handleLogout, 
   isDarkMode, 
-  setIsDarkMode 
+  setIsDarkMode,
+  storeSettings
 }) => {
   const [isStoreSettingsOpen, setIsStoreSettingsOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -78,10 +80,10 @@ const MobileSettings: React.FC<MobileSettingsProps> = ({
   ];
   
   // Store settings state
-  const [storeName, setStoreName] = useState('InvMaster POS');
-  const [storeAddress, setStoreAddress] = useState('Gedung Sudirman Lantai 4, Jakarta');
-  const [storePhone, setStorePhone] = useState('(021) 12345678');
-  const [storeEmail, setStoreEmail] = useState('info@invmaster.com');
+  const [storeName, setStoreName] = useState(storeSettings?.name || 'InvMaster POS');
+  const [storeAddress, setStoreAddress] = useState(storeSettings?.address || 'Gedung Sudirman Lantai 4, Jakarta');
+  const [storePhone, setStorePhone] = useState(storeSettings?.phone || '(021) 12345678');
+  const [storeEmail, setStoreEmail] = useState(storeSettings?.email || 'info@invmaster.com');
   
   // Notification settings state
   const [lowStockAlert, setLowStockAlert] = useState(true);

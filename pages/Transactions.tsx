@@ -180,6 +180,29 @@ const Transactions: React.FC<TransactionsProps> = ({ transactions }) => {
                                     <td className="py-2 text-right font-medium text-slate-800 dark:text-slate-200">Rp {formatCurrency(item.subtotal)}</td>
                                   </tr>
                                 ))}
+
+                                {/* tampilkan subtotal */}
+                                {/* {!t.discount_amount && (
+                                  <tr>
+                                    <td colSpan={3} className="pt-2 text-right font-bold text-slate-600 dark:text-slate-400">SubTotal:</td>
+                                    <td className="pt-2 text-right font-bold text-slate-800 dark:text-slate-100">Rp {formatCurrency(t.amount)}</td>
+                                  </tr>
+                                )} */}
+                                
+                                {/* jika transaction memiliki discount */}
+                                {t.discount_amount && (
+                                  // Tampilkan SubTotal & Diskon
+                                  <>
+                                    <tr>
+                                      <td colSpan={3} className="pt-2 text-right font-bold text-slate-600 dark:text-slate-400">SubTotal:</td>
+                                      <td className="pt-2 text-right font-bold text-slate-800 dark:text-slate-100">Rp {formatCurrency(t.amount + t.discount_amount)}</td>
+                                    </tr>
+                                    <tr>
+                                      <td colSpan={3} className="pt-2 text-right font-bold text-slate-600 dark:text-slate-400">Diskon {t.discount ? '(' + t.discount + '%)' : ''}:</td>
+                                      <td className="pt-2 text-right font-bold text-red-600 dark:text-red-400">- Rp {formatCurrency(t.discount_amount)}</td>
+                                    </tr>
+                                  </>
+                                )}
                               </tbody>
                               <tfoot className="border-t border-slate-100 dark:border-slate-700">
                                 <tr>

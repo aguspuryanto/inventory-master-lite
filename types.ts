@@ -29,6 +29,8 @@ export interface Transaction {
   description: string;
   created_at: string;
   items: TransactionItem[];
+  discount: number;
+  discount_amount: number;
 }
 
 export interface MonthlyStats {

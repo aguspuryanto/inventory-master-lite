@@ -218,6 +218,7 @@ const App: React.FC = () => {
           handleLogout={handleLogout}
           cart={cart}
           setCart={setCart}
+          storeSettings={storeSettings}
         />
       </HashRouter>
     );
