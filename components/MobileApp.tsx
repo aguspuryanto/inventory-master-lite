@@ -109,12 +109,12 @@ export const TransactionList = ({ transactions }: { transactions: Transaction[] 
             </div>
             <div>
               <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{t.type === 'IN' ? 'Barang Masuk' : 'Penjualan'}</p>
-              <p className="text-xs font-medium text-slate-400 dark:text-slate-500">{new Date(t.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })}</p>
+              <p className="text-xs font-medium text-slate-400 dark:text-slate-500">{new Date(t.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })}</p>
             </div>
           </div>
           <div className="text-right">
             <p className={`text-sm font-black ${t.type === 'IN' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-100'}`}>
-              {t.type === 'IN' ? '-' : '+'}Rp {formatCurrency(t.total)}
+              {t.type === 'IN' ? '-' : '+'}Rp {formatCurrency(t.amount)}
             </p>
             <p className="text-xs font-medium text-slate-400 dark:text-slate-500">{t.items.length} item</p>
           </div>
@@ -135,9 +135,11 @@ export const TransactionList = ({ transactions }: { transactions: Transaction[] 
 // --- PAGES ---
 
 const MobileDashboard = ({ products, transactions }: any) => {
+  // console.log(products);
+  // console.log(transactions);
   const totalStock = products.reduce((acc: number, p: Product) => acc + p.stock, 0);
-  const totalSales = transactions.filter((t: Transaction) => t.type === 'OUT').reduce((acc: number, t: Transaction) => acc + t.total, 0);
-  const totalIncoming = transactions.filter((t: Transaction) => t.type === 'IN').reduce((acc: number, t: Transaction) => acc + t.total, 0);
+  const totalSales = transactions.filter((t: Transaction) => t.type === 'OUT').reduce((acc: number, t: Transaction) => acc + t.amount, 0);
+  const totalIncoming = transactions.filter((t: Transaction) => t.type === 'IN').reduce((acc: number, t: Transaction) => acc + t.amount, 0);
 
   return (
     <div className="p-5 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
