@@ -42,11 +42,11 @@ const POS: React.FC<POSProps> = ({ products, onCheckout, cart, setCart }) => {
   );
 
   const total = cart.reduce((acc, item) => acc + item.subtotal, 0);
-  const change = Number(paymentAmount.replace(/\D/g, '')) - total;
 
   // Diskon state
   const [discount, setDiscount] = useState('0');
   const discountAmount = total * (Number(discount) / 100);
+  const change = Number(paymentAmount.replace(/\D/g, '')) - (total - discountAmount);
 
   useEffect(() => {
     // Focus search on mount
@@ -132,6 +132,13 @@ const POS: React.FC<POSProps> = ({ products, onCheckout, cart, setCart }) => {
     // Store payment info in a way we can access it in receipt
     (newTx as any).paymentAmount = paymentInfo.paymentAmount;
     (newTx as any).changeAmount = paymentInfo.changeAmount;
+  };
+
+  const handleApplyDiscount = () => {
+    // Calculate total after discount and set as payment amount
+    const totalAfterDiscount = total - discountAmount;
+    setPaymentAmount(totalAfterDiscount.toString());
+    console.log('Applied discount:', discount, 'Total after discount:', totalAfterDiscount);
   };
 
   return (
@@ -346,6 +353,13 @@ const POS: React.FC<POSProps> = ({ products, onCheckout, cart, setCart }) => {
                     Rp {formatCurrency(discountAmount)}
                   </span>
                 </div>
+                {/* Tambahkan Button Apply Discount */}
+                {/* <button 
+                  onClick={handleApplyDiscount}
+                  className="w-full bg-purple-600 text-white py-2 rounded-xl font-bold text-sm hover:bg-purple-700 transition-all"
+                >
+                  Terapkan Diskon
+                </button> */}
               </div>
 
               <button 
