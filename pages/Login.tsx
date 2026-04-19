@@ -1,46 +1,25 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Package, Mail, Lock, ArrowRight } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
-interface LoginProps {
-  onLogin: () => void;
-}
-
-const Login: React.FC<LoginProps> = ({ onLogin }) => {
+const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login, isLoading } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setIsLoading(true);
 
-    if (supabase) {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        setError(error.message);
-      } else {
-        navigate('/');
-      }
-    } else {
-      // Dummy authentication
-      if (email === 'admin@example.com' && password === 'admin1234') {
-        onLogin();
-        navigate('/');
-      } else {
-        setError('Email atau password salah. Gunakan admin@example.com / admin1234');
-      }
+    try {
+      await login(email, password);
+      navigate('/');
+    } catch (error: any) {
+      setError(error.message || 'Login gagal. Silakan coba lagi.');
     }
-    
-    setIsLoading(false);
   };
 
   return (

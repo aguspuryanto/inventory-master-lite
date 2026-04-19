@@ -1,14 +1,73 @@
 import { supabase } from '../lib/supabase';
-import { Product, Transaction } from '../types';
+import { Product, Transaction, Store, User, StoreUser, ProductWithStore, TransactionWithStore, StoreSettings } from '../types';
 
 export const db = {
+  // Store Management
+  async getStores(userId: string): Promise<Store[]> {
+    if (!supabase) return [];
+    
+    const { data, error } = await supabase
+      .from('store_users')
+      .select(`
+        stores (*)
+      `)
+      .eq('user_id', userId);
+    
+    if (error) {
+      console.error('Error fetching stores:', error);
+      return [];
+    }
+    
+    return data.map((item: any) => item.stores);
+  },
+
+  async createStore(storeData: Partial<Store>): Promise<Store> {
+    if (!supabase) throw new Error('No supabase connection');
+    
+    const { data, error } = await supabase
+      .from('stores')
+      .insert(storeData)
+      .select()
+      .single();
+      
+    if (error) throw error;
+    return data;
+  },
+
+  async createUser(userData: Partial<User>): Promise<User> {
+    if (!supabase) throw new Error('No supabase connection');
+    
+    const { data, error } = await supabase
+      .from('users')
+      .insert(userData)
+      .select()
+      .single();
+      
+    if (error) throw error;
+    return data;
+  },
+
+  async createStoreUser(storeUser: Partial<StoreUser>): Promise<StoreUser> {
+    if (!supabase) throw new Error('No supabase connection');
+    
+    const { data, error } = await supabase
+      .from('store_users')
+      .insert(storeUser)
+      .select()
+      .single();
+      
+    if (error) throw error;
+    return data;
+  },
+
   // Products
-  async getProducts(): Promise<Product[]> {
+  async getProducts(storeId: string): Promise<Product[]> {
     if (!supabase) return [];
     
     const { data, error } = await supabase
       .from('products')
       .select('*')
+      .eq('store_id', storeId)
       .order('created_at', { ascending: false });
     
     if (error) {
@@ -28,7 +87,7 @@ export const db = {
     }));
   },
 
-  async addProduct(product: Product) {
+  async addProduct(product: Product, storeId: string) {
     if (!supabase) return product;
     
     const { data, error } = await supabase
@@ -41,7 +100,8 @@ export const db = {
         purchase_price: product.purchasePrice,
         selling_price: product.sellingPrice,
         stock: product.stock,
-        category: product.category
+        category: product.category,
+        store_id: storeId
       })
       .select()
       .single();
@@ -50,7 +110,7 @@ export const db = {
     return data;
   },
 
-  async updateProduct(product: Product) {
+  async updateProduct(product: Product, storeId: string) {
     if (!supabase) return product;
     
     const { data, error } = await supabase
@@ -65,6 +125,7 @@ export const db = {
         category: product.category
       })
       .eq('id', product.id)
+      .eq('store_id', storeId)
       .select()
       .single();
       
@@ -72,19 +133,20 @@ export const db = {
     return data;
   },
 
-  async deleteProduct(id: string) {
+  async deleteProduct(id: string, storeId: string) {
     if (!supabase) return;
     
     const { error } = await supabase
       .from('products')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('store_id', storeId);
       
     if (error) throw error;
   },
 
   // Transactions
-  async getTransactions(): Promise<Transaction[]> {
+  async getTransactions(storeId: string): Promise<Transaction[]> {
     if (!supabase) return [];
     
     const { data, error } = await supabase
@@ -93,6 +155,7 @@ export const db = {
         *,
         transaction_items (*)
       `)
+      .eq('store_id', storeId)
       .order('created_at', { ascending: false });
       
     if (error) {
@@ -120,12 +183,12 @@ export const db = {
     }));
   },
 
-  async addTransaction(tx: Transaction) {
+  async addTransaction(tx: Transaction, storeId: string) {
     if (!supabase) return;
     
     // 1. Insert Transaction
     // id, type, main_category, sub_category, amount, description, created_at
-    // tambah kolom, discount, discount_amount
+    // tambah kolom, discount, discount_amount, store_id
     const { error: txError } = await supabase
       .from('transactions')
       .insert({
@@ -137,6 +200,7 @@ export const db = {
         description: tx.description,
         discount: tx.discount,
         discount_amount: tx.discount_amount,
+        store_id: storeId,
         created_at: tx.created_at
       });
       
@@ -183,12 +247,13 @@ export const db = {
   },
 
   // store settings
-  async getStoreSettings() {
+  async getStoreSettings(storeId: string): Promise<StoreSettings | null> {
     if (!supabase) return null;
     
     const { data, error } = await supabase
       .from('store_settings')
       .select('*')
+      .eq('store_id', storeId)
       .single();
       
     if (error) {
@@ -197,5 +262,54 @@ export const db = {
     }
     
     return data;
+  },
+
+  async updateStoreSettings(settings: Partial<StoreSettings>, storeId: string): Promise<StoreSettings> {
+    if (!supabase) throw new Error('No supabase connection');
+    
+    const { data, error } = await supabase
+      .from('store_settings')
+      .upsert({
+        ...settings,
+        store_id: storeId,
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+      
+    if (error) throw error;
+    return data;
+  },
+
+  // Authentication helpers
+  async getUserByEmail(email: string): Promise<User | null> {
+    if (!supabase) return null;
+    
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+      
+    if (error) return null;
+    return data;
+  },
+
+  async getUserStores(userId: string): Promise<Store[]> {
+    if (!supabase) return [];
+    
+    const { data, error } = await supabase
+      .from('store_users')
+      .select(`
+        stores (*)
+      `)
+      .eq('user_id', userId);
+      
+    if (error) {
+      console.error('Error fetching user stores:', error);
+      return [];
+    }
+    
+    return data.map((item: any) => item.stores);
   }
 };

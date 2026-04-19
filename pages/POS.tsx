@@ -19,6 +19,7 @@ import {
 import { Product, Transaction, TransactionItem } from '../types';
 import { formatCurrency, generateId } from '../utils';
 import { db } from '../services/db';
+import { useAuth } from '../contexts/AuthContext';
 
 interface POSProps {
   products: Product[];
@@ -28,6 +29,7 @@ interface POSProps {
 }
 
 const POS: React.FC<POSProps> = ({ products, onCheckout, cart, setCart }) => {
+  const { currentStore } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('0');
@@ -54,8 +56,10 @@ const POS: React.FC<POSProps> = ({ products, onCheckout, cart, setCart }) => {
     
     // Fetch store settings
     const fetchStoreSettings = async () => {
-      const settings = await db.getStoreSettings();
-      setStoreSettings(settings);
+      if (currentStore) {
+        const settings = await db.getStoreSettings(currentStore.id);
+        setStoreSettings(settings);
+      }
     };
     fetchStoreSettings();
   }, []);
