@@ -187,8 +187,8 @@ const UserManagement: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 transition-colors duration-200">
+      <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-6 mb-6">
           <div className="flex items-center justify-between">
