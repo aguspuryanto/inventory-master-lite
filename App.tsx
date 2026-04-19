@@ -66,9 +66,14 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      // console.log('_currentStore', currentStore);
+      console.log('_currentStore', currentStore);
       if (supabase && currentStore) {
         try {
+          
+          if (user.email === 'admin@example.com') {
+            currentStore.id = null;
+          }
+
           const [storeSettingsData, dbProducts, dbTransactions] = await Promise.all([
             db.getStoreSettings(currentStore.id),
             db.getProducts(currentStore.id),

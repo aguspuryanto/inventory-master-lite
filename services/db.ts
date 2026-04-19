@@ -67,14 +67,18 @@ export const db = {
   },
 
   // Products
-  async getProducts(storeId: string): Promise<Product[]> {
+  async getProducts(storeId: string | null): Promise<Product[]> {
     if (!supabase) return [];
     
-    const { data, error } = await supabase
+    let query = supabase
       .from('products')
-      .select('*')
-      .eq('store_id', storeId)
-      .order('created_at', { ascending: false });
+      .select('*');
+    
+    if (storeId) {
+      query = query.eq('store_id', storeId);
+    }
+    
+    const { data, error } = await query.order('created_at', { ascending: false });
     
     if (error) {
       console.error('Error fetching products:', error);
@@ -152,17 +156,21 @@ export const db = {
   },
 
   // Transactions
-  async getTransactions(storeId: string): Promise<Transaction[]> {
+  async getTransactions(storeId: string | null): Promise<Transaction[]> {
     if (!supabase) return [];
     
-    const { data, error } = await supabase
+    let query = supabase
       .from('transactions')
       .select(`
         *,
         transaction_items (*)
-      `)
-      .eq('store_id', storeId)
-      .order('created_at', { ascending: false });
+      `);
+    
+    if (storeId) {
+      query = query.eq('store_id', storeId);
+    }
+    
+    const { data, error } = await query.order('created_at', { ascending: false });
       
     if (error) {
       console.error('Error fetching transactions:', error);
