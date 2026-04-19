@@ -80,10 +80,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     if (userStores.length > 0) {
       localStorage.setItem('userStores', JSON.stringify(userStores));
+      // Auto-select first store if none selected
+      if (!currentStore) {
+        setCurrentStore(userStores[0]);
+      }
     } else {
       localStorage.removeItem('userStores');
     }
-  }, [userStores]);
+  }, [userStores, currentStore]);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
@@ -155,6 +159,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               }
               
               // Get stores for this user
+              console.log('Getting stores for user:', userData.id);
               stores = await db.getUserStores(userData.id);
             }
           } catch (authErr) {
@@ -164,28 +169,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         // If Supabase Auth failed or no user found, try public.users table
         if (!userData) {
-          console.log('Trying public.users table...');
+          // console.log('Trying public.users table...');
           userData = await db.getUserByEmail(email);
-          console.log('User data from database:', userData);
+          // console.log('User data from database:', userData);
           
           if (!userData) {
-            console.log('User not found in database, checking if registration worked...');
+            // console.log('User not found in database, checking if registration worked...');
             // Let's check if there are any users in the database
             if (supabase) {
               const { data: allUsers, error: allUsersError } = await supabase
                 .from('users')
                 .select('email, full_name, created_at')
                 .limit(5);
-              console.log('All users in database:', allUsers);
-              console.log('All users error:', allUsersError);
+              // console.log('All users in database:', allUsers);
+              // console.log('All users error:', allUsersError);
             }
             throw new Error('User not found. Registration may have failed.');
           }
           
           // In production, verify password hash here
-          console.log('Getting stores for user ID:', userData.id);
+          // console.log('Getting stores for user ID:', userData.id);
           stores = await db.getUserStores(userData.id);
-          console.log('User stores from database:', stores);
+          // console.log('User stores from database:', stores);
         }
         
         setUser(userData);

@@ -254,7 +254,7 @@ export const db = {
       .from('store_settings')
       .select('*')
       .eq('store_id', storeId)
-      .single();
+      .maybeSingle();
       
     if (error) {
       console.error('Error fetching settings:', error);
@@ -296,6 +296,7 @@ export const db = {
   },
 
   async getUserStores(userId: string): Promise<Store[]> {
+    console.log('Fetching user stores for user:', userId);
     if (!supabase) return [];
     
     const { data, error } = await supabase

@@ -18,6 +18,7 @@ import { Product, Transaction } from '../types';
 import { formatCurrency, parseFormattedNumber, generateId } from '../utils';
 import { db } from '../services/db';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 interface ProductsProps {
   products: Product[];
@@ -26,6 +27,8 @@ interface ProductsProps {
 }
 
 const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry }) => {
+  const { currentStore } = useAuth();
+  console.log('currentStore', currentStore);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -82,7 +85,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
     try {
       if (editingProduct) {
         // Save to DB
-        if (supabase) await db.updateProduct(productData);
+        if (supabase && currentStore) await db.updateProduct(productData, currentStore.id);
         
         // If stock increased manually, track as IN transaction
         if (productData.stock > editingProduct.stock) {
@@ -104,7 +107,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
         setProducts(prev => prev.map(p => p.id === editingProduct.id ? productData : p));
       } else {
         // Save to DB
-        if (supabase) await db.addProduct(productData);
+        if (supabase) await db.addProduct(productData, currentStore.id);
         
         setProducts(prev => [...prev, productData]);
         if (productData.stock > 0) {
@@ -133,7 +136,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
   const handleDelete = async (id: string) => {
     if (confirm('Hapus barang ini?')) {
       try {
-        if (supabase) await db.deleteProduct(id);
+        if (supabase && currentStore) await db.deleteProduct(id, currentStore.id);
         setProducts(prev => prev.filter(p => p.id !== id));
       } catch (error) {
         console.error("Error deleting product:", error);
@@ -192,86 +195,99 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700">
-              <tr>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Barang</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Barcode</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Harga Jual</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Stok</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Kategori</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-              {filteredProducts.map(p => (
-                <tr key={p.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/50 transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 font-bold uppercase">
-                        {p.name.charAt(0)}
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-700 dark:text-slate-200">{p.name}</p>
-                        <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">{p.code}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-                      <Barcode size={14} />
-                      <span className="text-sm font-mono">{p.barcode || '-'}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Rp {formatCurrency(p.sellingPrice)}</p>
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-tighter">Profit: Rp {formatCurrency(p.sellingPrice - p.purchasePrice)}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                      p.stock <= 5 ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400' : 
-                      p.stock <= 15 ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
-                    }`}>
-                      {p.stock} pcs
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400 font-medium">
-                    {p.category}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
-                        onClick={() => handleOpenModal(p)}
-                        className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                        title="Edit"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(p.id)}
-                        className="p-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
-                        title="Hapus"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filteredProducts.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-6 py-20 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <Package className="text-slate-200 dark:text-slate-700" size={64} />
-                      <p className="text-slate-400 dark:text-slate-500 font-medium">Tidak ada barang yang ditemukan.</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        {filteredProducts.length === 0 ? (
+              <div className="text-center py-16">
+                <Package className="mx-auto h-16 w-16 text-slate-300 dark:text-slate-600 mb-4" />
+                <h3 className="text-xl font-semibold text-slate-600 dark:text-slate-300 mb-2">Belum Ada Produk</h3>
+                <p className="text-slate-500 dark:text-slate-400 mb-6">Tambahkan produk pertama Anda untuk memulai mengelola inventaris.</p>
+                <button 
+                  onClick={() => handleOpenModal()}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 shadow-lg shadow-purple-100 dark:shadow-none transition-all"
+                >
+                  <Plus size={18} />
+                  Tambah Produk Pertama
+                </button>
+              </div>
+            ) : (
+              <table className="w-full text-left">
+                <thead className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700">
+                  <tr>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Barang</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Barcode</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Harga Jual</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Stok</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Kategori</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                  {filteredProducts.map(p => (
+                    <tr key={p.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/50 transition-colors group">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 font-bold uppercase">
+                            {p.name.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-700 dark:text-slate-200">{p.name}</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">{p.code}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                          <Barcode size={14} />
+                          <span className="text-sm font-mono">{p.barcode || '-'}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Rp {formatCurrency(p.sellingPrice)}</p>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-tighter">Profit: Rp {formatCurrency(p.sellingPrice - p.purchasePrice)}</p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                          p.stock <= 5 ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400' : 
+                          p.stock <= 15 ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
+                        }`}>
+                          {p.stock} pcs
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400 font-medium">
+                        {p.category}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => handleOpenModal(p)}
+                            className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                            title="Edit"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(p.id)}
+                            className="p-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
+                            title="Hapus"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredProducts.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-20 text-center">
+                        <div className="flex flex-col items-center gap-2">
+                          <Package className="text-slate-200 dark:text-slate-700" size={64} />
+                          <p className="text-slate-400 dark:text-slate-500 font-medium">Tidak ada barang yang ditemukan.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+        )}
       </div>
 
       {/* Modal CRUD */}

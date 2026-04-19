@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Package, 
@@ -47,6 +47,8 @@ const SidebarItem: React.FC<{ to: string, icon: React.ReactNode, label: string, 
 
 const AppContent: React.FC = () => {
   const { user, currentStore, logout, isLoading: authLoading } = useAuth();
+  // console.log('user', user);
+  // console.log('currentStore', currentStore);
   const [products, setProducts] = useState<Product[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [storeSettings, setStoreSettings] = useState<any>(null);
@@ -61,6 +63,7 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     const loadData = async () => {
+      // console.log('_currentStore', currentStore);
       if (supabase && currentStore) {
         try {
           const [storeSettingsData, dbProducts, dbTransactions] = await Promise.all([
@@ -69,8 +72,11 @@ const AppContent: React.FC = () => {
             db.getTransactions(currentStore.id)
           ]);
           setStoreSettings(storeSettingsData);
+          // console.log('Store Settings:', storeSettingsData);
           setProducts(dbProducts);
+          // console.log('Products:', dbProducts);
           setTransactions(dbTransactions);
+          // console.log('Transactions:', dbTransactions);
         } catch (error) {
           console.error("Error loading data from Supabase:", error);
         }
@@ -130,19 +136,19 @@ const AppContent: React.FC = () => {
 
   if (!user) {
     return (
-      <HashRouter>
+      <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<RegisterStore />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
-      </HashRouter>
+      </BrowserRouter>
     );
   }
 
   if (isMobile) {
     return (
-      <HashRouter>
+      <BrowserRouter>
         <MobileApp 
           products={products}
           setProducts={setProducts}
@@ -154,12 +160,12 @@ const AppContent: React.FC = () => {
           storeSettings={storeSettings}
           handleLogout={handleLogout}
         />
-      </HashRouter>
+      </BrowserRouter>
     );
   }
 
   return (
-    <HashRouter>
+    <BrowserRouter>
       <div className={`min-h-screen bg-slate-50 dark:bg-slate-900 flex transition-colors duration-200 ${isDesktop ? 'gap-0' : ''}`}>
         {/* Sidebar */}
         <aside className={`${
@@ -171,7 +177,7 @@ const AppContent: React.FC = () => {
                 <Package size={20} />
               </div>
               <div>
-                <h1 className="text-lg font-black text-slate-800 dark:text-slate-100">InvMaster</h1>
+                <h1 className="text-lg font-black text-slate-800 dark:text-slate-100">DTAKasir</h1>
                 <p className="text-xs text-slate-500 dark:text-slate-400">{currentStore?.name || 'POS System'}</p>
               </div>
             </div>
@@ -275,12 +281,13 @@ const AppContent: React.FC = () => {
                 <Route path="/transactions" element={<Transactions transactions={transactions} />} />
                 <Route path="/reports" element={<Reports transactions={transactions} products={products} />} />
                 <Route path="/register" element={<RegisterStore />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             )}
           </div>
         </main>
       </div>
-    </HashRouter>
+    </BrowserRouter>
   );
 };
 

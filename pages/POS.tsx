@@ -387,9 +387,9 @@ const POS: React.FC<POSProps> = ({ products, onCheckout, cart, setCart }) => {
               <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Printer size={32} />
               </div>
-              <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 uppercase">{storeSettings?.name || 'InvMaster POS'}</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{storeSettings?.address || 'Gedung Sudirman Lantai 4, Jakarta'}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Telp: {storeSettings?.phone || '(021) 12345678'}</p>
+              <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 uppercase">{storeSettings?.name}</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{storeSettings?.address}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Telp: {storeSettings?.phone}</p>
             </div>
 
             <div className="border-t border-dashed border-slate-200 dark:border-slate-700 py-4 space-y-2">
