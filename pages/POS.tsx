@@ -138,6 +138,15 @@ const POS: React.FC<POSProps> = ({ products, onCheckout, cart, setCart }) => {
     (newTx as any).changeAmount = paymentInfo.changeAmount;
   };
 
+  const handlePrintReceipt = async () => {
+    if (!showReceipt) return;
+    
+    // Convert Receipt to Transaction format for TransactionReceiptPrinter
+    // Add your print logic here
+    console.log('Printing receipt:', showReceipt);
+    // TODO: Implement actual printing functionality
+  };
+
   const handleApplyDiscount = () => {
     // Calculate total after discount and set as payment amount
     const totalAfterDiscount = total - discountAmount;
@@ -431,12 +440,21 @@ const POS: React.FC<POSProps> = ({ products, onCheckout, cart, setCart }) => {
 
             <div className="text-center mt-8 space-y-4">
               <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Terima kasih telah berbelanja!</p>
-              <button 
-                onClick={() => setShowReceipt(null)}
-                className="w-full py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-colors"
-              >
-                Selesai
-              </button>
+              <div className="flex gap-3">
+                <button 
+                  onClick={handlePrintReceipt}
+                  className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Printer size={16} />
+                  Cetak Struk
+                </button>
+                <button 
+                  onClick={() => setShowReceipt(null)}
+                  className="flex-1 py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-colors"
+                >
+                  Selesai
+                </button>
+              </div>
             </div>
           </div>
         </div>

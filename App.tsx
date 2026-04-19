@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Package, 
@@ -14,7 +14,8 @@ import {
   Sun,
   LogOut,
   Smartphone,
-  Monitor
+  Monitor,
+  Users
 } from 'lucide-react';
 
 import Dashboard from './pages/Dashboard';
@@ -24,6 +25,8 @@ import Transactions from './pages/Transactions';
 import Reports from './pages/Reports';
 import Login from './pages/Login';
 import RegisterStore from './pages/RegisterStore';
+import UserManagement from './pages/UserManagement';
+import Settings from './pages/Settings';
 import { Product, Transaction, TransactionItem } from './types';
 import { db } from './services/db';
 import { supabase } from './lib/supabase';
@@ -195,6 +198,9 @@ const AppContent: React.FC = () => {
             <SidebarItem to="/pos" icon={<ShoppingCart size={20} />} label="Kasir" />
             <SidebarItem to="/transactions" icon={<History size={20} />} label="Transaksi" />
             <SidebarItem to="/reports" icon={<FileText size={20} />} label="Laporan" />
+            {user?.is_owner && (
+              <SidebarItem to="/user-management" icon={<Users size={20} />} label="Manajemen User" />
+            )}
           </nav>
         </aside>
 
@@ -236,16 +242,19 @@ const AppContent: React.FC = () => {
               </button>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center group relative">
+                  <Link 
+                    to="/settings" 
+                    className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center group relative"
+                    title={user?.full_name || user?.email || 'User'}
+                  >
                     <User 
                       size={20} 
-                      title={user?.full_name || user?.email || 'User'} 
-                      className="text-slate-400 dark:text-slate-300 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-colors cursor-pointer" 
+                      className="text-slate-400 dark:text-slate-300 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-colors" 
                     />
                     <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-slate-800 dark:bg-slate-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
                       {user?.full_name || user?.email || 'User'}
                     </div>
-                  </div>
+                  </Link>
                 </div>
                 <button 
                   onClick={handleLogout}
@@ -280,6 +289,8 @@ const AppContent: React.FC = () => {
                 <Route path="/pos" element={<POS products={products} onCheckout={handleAddTransaction} cart={cart} setCart={setCart} />} />
                 <Route path="/transactions" element={<Transactions transactions={transactions} />} />
                 <Route path="/reports" element={<Reports transactions={transactions} products={products} />} />
+                <Route path="/user-management" element={<UserManagement />} />
+                <Route path="/settings" element={<Settings />} />
                 <Route path="/register" element={<RegisterStore />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

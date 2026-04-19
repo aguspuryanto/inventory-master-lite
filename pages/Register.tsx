@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Package, Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { Package, Mail, Lock, User, ArrowRight, Crown, Building, Rocket } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const Register: React.FC = () => {
@@ -10,7 +10,35 @@ const Register: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState<'starter' | 'business' | 'premium'>('starter');
   const navigate = useNavigate();
+
+  const packages = [
+    {
+      id: 'starter',
+      name: 'Starter',
+      price: 'Gratis',
+      icon: Rocket,
+      features: ['1 Toko', '100 Produk', 'Dasbor Laporan'],
+      color: 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600'
+    },
+    {
+      id: 'business',
+      name: 'Business',
+      price: 'Rp 99.000/bulan',
+      icon: Building,
+      features: ['5 Toko', '1000 Produk', 'Dasbor Laporan', 'Export PDF'],
+      color: 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600'
+    },
+    {
+      id: 'premium',
+      name: 'Premium',
+      price: 'Rp 299.000/bulan',
+      icon: Crown,
+      features: ['Toko Tak Terbatas', 'Produk Tak Terbatas', 'Semua Fitur', 'Support Prioritas'],
+      color: 'bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-600'
+    }
+  ];
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,12 +52,18 @@ const Register: React.FC = () => {
     setIsLoading(true);
 
     if (supabase) {
+      // Map package to subscription value
+      const subscribeMap = { starter: 1, business: 2, premium: 3 };
+      const isSubscribe = subscribeMap[selectedPackage];
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             name,
+            is_owner: true, // Default to Owner/Administrator
+            is_subscribe: isSubscribe
           }
         }
       });
@@ -71,6 +105,50 @@ const Register: React.FC = () => {
           )}
 
           <form onSubmit={handleRegister} className="space-y-4">
+            {/* Package Selection */}
+            <div className="mb-6">
+              <label className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 block">Pilih Paket Berlangganan</label>
+              <div className="grid grid-cols-1 gap-3">
+                {packages.map((pkg) => {
+                  const Icon = pkg.icon;
+                  return (
+                    <div
+                      key={pkg.id}
+                      onClick={() => setSelectedPackage(pkg.id as any)}
+                      className={`relative p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                        selectedPackage === pkg.id
+                          ? `${pkg.color} border-current`
+                          : 'border-slate-200 dark:border-slate-700 hover:border-purple-300'
+                      }`}
+                    >
+                      {selectedPackage === pkg.id && (
+                        <div className="absolute top-2 right-2 w-3 h-3 bg-purple-600 rounded-full flex items-center justify-center">
+                          <div className="w-2 h-2 bg-white rounded-full"></div>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className={`p-2 rounded-lg ${selectedPackage === pkg.id ? 'bg-purple-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600'}`}>
+                          <Icon size={20} />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-slate-800 dark:text-slate-100">{pkg.name}</h3>
+                          <p className="text-sm text-slate-600 dark:text-slate-400">{pkg.price}</p>
+                        </div>
+                      </div>
+                      <ul className="space-y-1">
+                        {pkg.features.map((feature, index) => (
+                          <li key={index} className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                            <div className="w-1 h-1 bg-slate-400 rounded-full"></div>
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="space-y-1.5">
               <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Nama Lengkap</label>
               <div className="relative">

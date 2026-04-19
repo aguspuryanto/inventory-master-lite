@@ -155,7 +155,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Manajemen Barang</h1>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Produk</h1>
           <p className="text-slate-500 dark:text-slate-400">Kelola master data produk dan stok inventaris</p>
         </div>
         <div className="flex gap-2">

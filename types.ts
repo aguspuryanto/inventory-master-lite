@@ -57,9 +57,12 @@ export interface Store {
 export interface User {
   id: string;
   email: string;
+  password_hash?: string; // Optional since Supabase Auth handles passwords
   full_name?: string;
   phone?: string;
   is_active: boolean;
+  is_owner?: boolean;
+  is_subscribe?: number;
   created_at: string;
   updated_at: string;
 }

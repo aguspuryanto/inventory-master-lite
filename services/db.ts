@@ -37,9 +37,15 @@ export const db = {
   async createUser(userData: Partial<User>): Promise<User> {
     if (!supabase) throw new Error('No supabase connection');
     
+    // Add password_hash field if not provided (Supabase Auth handles passwords)
+    const userDataWithPassword = {
+      ...userData,
+      password_hash: userData.password_hash || 'supabase_auth_managed'
+    };
+    
     const { data, error } = await supabase
       .from('users')
-      .insert(userData)
+      .insert(userDataWithPassword)
       .select()
       .single();
       
