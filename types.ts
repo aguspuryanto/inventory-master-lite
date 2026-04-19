@@ -119,3 +119,38 @@ export interface StoreSettings {
   created_at: string;
   updated_at: string;
 }
+
+export interface PrinterSettings {
+  id?: string;
+  store_id?: string;
+  paperSize: '58mm' | '80mm';
+  orientation: 'Portrait' | 'Landscape';
+  autoPrint: boolean;
+  deviceId?: string;
+  deviceName?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface UserProfile {
+  name: string;
+  email: string;
+  role: string;
+  avatar?: string;
+}
+
+export interface Staff {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  phone: string;
+  status: 'active' | 'inactive';
+}
+
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  type: 'cash' | 'card' | 'ewallet' | 'bank_transfer';
+  isActive: boolean;
+}

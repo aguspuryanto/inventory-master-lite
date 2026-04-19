@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { Product, Transaction, Store, User, StoreUser, ProductWithStore, TransactionWithStore, StoreSettings } from '../types';
+import { Product, Transaction, Store, User, StoreUser, ProductWithStore, TransactionWithStore, StoreSettings, PrinterSettings } from '../types';
 
 export const db = {
   // Store Management
@@ -318,5 +318,44 @@ export const db = {
     }
     
     return data.map((item: any) => item.stores);
+  },
+
+  // Printer Settings
+  async getPrinterSettings(storeId?: string): Promise<PrinterSettings | null> {
+    if (!supabase) return null;
+    
+    let query = supabase.from('printer_settings').select('*');
+    
+    if (storeId) {
+      query = query.eq('store_id', storeId);
+    }
+    
+    const { data, error } = await query.maybeSingle();
+      
+    if (error) {
+      console.error('Error fetching printer settings:', error);
+      return null;
+    }
+    
+    return data;
+  },
+
+  async setPrinterSettings(settings: PrinterSettings, storeId?: string): Promise<PrinterSettings> {
+    if (!supabase) throw new Error('No supabase connection');
+    
+    const settingsData = {
+      ...settings,
+      store_id: storeId || settings.store_id,
+      updated_at: new Date().toISOString()
+    };
+    
+    const { data, error } = await supabase
+      .from('printer_settings')
+      .upsert(settingsData)
+      .select()
+      .single();
+      
+    if (error) throw error;
+    return data;
   }
 };
