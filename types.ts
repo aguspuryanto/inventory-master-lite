@@ -107,6 +107,12 @@ export interface StoreSettings {
   logo_url?: string;
   tax_number?: string;
   footer_text?: string;
+  currency: string;
+  tax_rate: number;
+  low_stock_threshold: number;
+  enable_notifications: boolean;
+  enable_email_reports: boolean;
+  report_frequency: 'daily' | 'weekly' | 'monthly';
   created_at: string;
   updated_at: string;
 }
