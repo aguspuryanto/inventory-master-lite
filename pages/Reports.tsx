@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   FileText, 
   Download, 
-  Calendar, 
+  Calendar as CalendarIcon, 
   ChevronRight, 
   PieChart as PieChartIcon, 
   BarChart3,
@@ -13,6 +13,8 @@ import { Transaction, Product } from '../types';
 import { db } from '../services/db';
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency } from '../utils';
+import { DatePicker } from '../components/ui/date-picker';
+import { Button } from '../components/ui/button';
 
 interface ReportsProps {
   transactions: Transaction[];
@@ -39,14 +41,26 @@ const Reports: React.FC<ReportsProps> = ({ transactions, products }) => {
   // console.log("transactions", transactions);
   // console.log("products", products);
 
+  // Filter transactions based on date range
+  const filteredTransactions = transactions.filter(t => {
+    const transactionDate = new Date(t.created_at);
+    const startDate = dateRange.start ? new Date(dateRange.start) : null;
+    const endDate = dateRange.end ? new Date(dateRange.end) : null;
+    
+    if (startDate && transactionDate < startDate) return false;
+    if (endDate && transactionDate > endDate) return false;
+    
+    return true;
+  });
+
   const stats = {
-    totalSales: transactions.filter(t => t.type === 'OUT').reduce((acc, t) => acc + t.amount, 0),
+    totalSales: filteredTransactions.filter(t => t.type === 'OUT').reduce((acc, t) => acc + t.amount, 0),
     totalInventoryValue: products.reduce((acc, p) => acc + (p.stock * p.purchasePrice), 0),
     topSelling: products.sort((a, b) => b.stock - a.stock).slice(0, 3)
   };
 
   // Flatten transaction items for table display
-  const transactionItems = transactions
+  const transactionItems = filteredTransactions
     .filter(t => t.type === 'OUT')
     .flatMap(t => 
       t.items.map(item => ({
@@ -101,86 +115,121 @@ const Reports: React.FC<ReportsProps> = ({ transactions, products }) => {
         </div> */}
       </div>
 
-      <div className="space-y-6">
-          <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm transition-colors duration-200">
-            <div className="space-y-6">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl">
-                  <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Periode</p>
-                  <p className="font-bold text-slate-700 dark:text-slate-200">Januari 2024 - Sekarang</p>
+      <div className="space-y-4">
+          {/* Date Filter */}
+          <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
+              <div className="flex items-center gap-2">
+                <CalendarIcon size={18} className="text-purple-600 dark:text-purple-400" />
+                <span className="font-medium text-slate-700 dark:text-slate-300">Filter Tanggal:</span>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 flex-1">
+                <div className="flex-1">
+                  <DatePicker
+                    value={dateRange.start}
+                    onChange={(date) => setDateRange(prev => ({ ...prev, start: date }))}
+                    placeholder="Dari tanggal"
+                  />
                 </div>
-                <div className="flex-1 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl">
-                  <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Status Laporan</p>
-                  <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold">
-                    <CheckCircle2 size={16} />
-                    Siap di-export
-                  </div>
+                <div className="flex-1">
+                  <DatePicker
+                    value={dateRange.end}
+                    onChange={(date) => setDateRange(prev => ({ ...prev, end: date }))}
+                    placeholder="Sampai tanggal"
+                  />
                 </div>
               </div>
+              <Button
+                variant="outline"
+                onClick={() => setDateRange({ start: '', end: '' })}
+                className="shrink-0"
+              >
+                Reset
+              </Button>
+            </div>
+          </div>
 
-              <div className="bg-white dark:bg-slate-800 p-0 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm transition-colors duration-200">
-            
-            <div className="border border-slate-100 dark:border-slate-700 rounded-2xl overflow-hidden">
+          <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">Periode</p>
+                <p className="font-semibold text-slate-700 dark:text-slate-200 text-sm">
+                  {dateRange.start && dateRange.end 
+                    ? `${new Date(dateRange.start).toLocaleDateString('id-ID')} - ${new Date(dateRange.end).toLocaleDateString('id-ID')}`
+                    : dateRange.start 
+                    ? `Dari ${new Date(dateRange.start).toLocaleDateString('id-ID')}`
+                    : dateRange.end 
+                    ? `Sampai ${new Date(dateRange.end).toLocaleDateString('id-ID')}`
+                    : 'Semua Data'}
+                </p>
+              </div>
+              <div className="flex-1 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">Total Transaksi</p>
+                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold text-sm">
+                  <CheckCircle2 size={14} />
+                  {filteredTransactions.length} transaksi
+                </div>
+              </div>
+            </div>
+
+              <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
               <table className="w-full text-left">
                 <thead className="bg-slate-50 dark:bg-slate-800/50">
                   <tr>
-                    <th className="px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Waktu</th>
-                    <th className="px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Barang</th>
-                    <th className="px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase text-center">Jumlah</th>
-                    <th className="px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase text-right">Harga jual</th>
-                    <th className="px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Pembayaran</th>
-                    <th className="px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase text-right">HPP</th>
-                    <th className="px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase text-right">Untung</th>
+                    <th className="px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Waktu</th>
+                    <th className="px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Barang</th>
+                    <th className="px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase text-center">Jumlah</th>
+                    <th className="px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase text-right">Harga</th>
+                    <th className="px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Pembayaran</th>
+                    <th className="px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase text-right">HPP</th>
+                    <th className="px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase text-right">Untung</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                   {transactions.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
-                        No transactions found
+                      <td colSpan={7} className="px-3 py-6 text-center text-slate-500 dark:text-slate-400 text-sm">
+                        Tidak ada transaksi
                       </td>
                     </tr>
                   ) : transactionItems.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
-                        No sales transactions found
+                      <td colSpan={7} className="px-3 py-6 text-center text-slate-500 dark:text-slate-400 text-sm">
+                        Tidak ada transaksi penjualan
                       </td>
                     </tr>
                   ) : (
                     transactionItems.map((item, index) => (
                       <tr key={`${item.transactionId}-${index}`}>
-                        <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">
+                        <td className="px-3 py-2 text-sm text-slate-700 dark:text-slate-300">
                           {new Date(item.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                         </td>
-                        <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{item.name}</td>
-                        <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300 text-center">{item.quantity}</td>
-                        <td className="px-4 py-3 text-sm text-right text-slate-800 dark:text-slate-100">{formatCurrency(item.subtotal)}</td>
-                        <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{item.paymentMethod}</td>
-                        <td className="px-4 py-3 text-sm text-right text-slate-800 dark:text-slate-100">{formatCurrency(item.price * item.quantity)}</td>
-                        <td className="px-4 py-3 text-sm text-right text-green-600 dark:text-green-400 font-bold">
-                          {formatCurrency(item.subtotal - (item.price * item.quantity))}
-                        </td>
+                        <td className="px-3 py-2 text-sm text-slate-700 dark:text-slate-300">{item.name}</td>
+                        <td className="px-3 py-2 text-sm text-slate-700 dark:text-slate-300 text-center">{item.quantity}</td>
+                        <td className="px-3 py-2 text-sm text-right text-slate-800 dark:text-slate-100">{formatCurrency(item.subtotal)}</td>
+                        <td className="px-3 py-2 text-sm text-slate-700 dark:text-slate-300">{item.paymentMethod}</td>
+                        <td className="px-3 py-2 text-sm text-right text-slate-700 dark:text-slate-300">{formatCurrency(item.price * item.quantity)}</td>
+                        <td className="px-3 py-2 text-sm text-right font-medium text-emerald-600 dark:text-emerald-400">{formatCurrency(item.subtotal - (item.price * item.quantity))}</td>
                       </tr>
                     ))
                   )}
-                  
-                  {/* Total row */}
-                  {transactionItems.length > 0 && (
-                    <tr className="bg-slate-100 dark:bg-slate-800/50 font-bold">
-                      <td className="px-4 py-4 text-sm font-bold text-slate-700 dark:text-slate-300 uppercase" colSpan="4">TOTAL PENJUALAN</td>
-                      <td className="px-4 py-4 text-sm font-bold text-right text-slate-800 dark:text-slate-100">{formatCurrency(totals.sellingPrice)}</td>
-                      <td className="px-4 py-4 text-sm font-bold text-right text-slate-800 dark:text-slate-100">{formatCurrency(totals.hpp)}</td>
-                      <td className="px-4 py-4 text-sm font-bold text-right text-green-600 dark:text-green-400">{formatCurrency(totals.profit)}</td>
-                    </tr>
-                  )}
                 </tbody>
+                {/* Total row */}
+                {transactionItems.length > 0 && (
+                  <tfoot>
+                    <tr className="bg-slate-100 dark:bg-slate-800/50 font-bold">
+                      <td className="px-3 py-3 text-sm font-bold text-slate-700 dark:text-slate-300 uppercase" colSpan="4">TOTAL PENJUALAN</td>
+                      <td className="px-3 py-3 text-sm font-bold text-right text-slate-800 dark:text-slate-100">{formatCurrency(totals.sellingPrice)}</td>
+                      <td className="px-3 py-3 text-sm font-bold text-right text-slate-800 dark:text-slate-100">{formatCurrency(totals.hpp)}</td>
+                      <td className="px-3 py-3 text-sm font-bold text-right text-emerald-600 dark:text-emerald-400">{formatCurrency(totals.profit)}</td>
+                    </tr>
+                  </tfoot>
+                )}
               </table>
-              </div>
             </div>
           </div>
-        </div>
+      </div>
     </div>
-  </div>
   );
 };
 
