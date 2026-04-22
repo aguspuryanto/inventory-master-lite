@@ -16,15 +16,26 @@ import {
 } from 'lucide-react';
 import { PrinterSettings, StoreSettings, UserProfile, Staff, PaymentMethod } from '../types';
 import { db } from '../services/db';
+import { useAuth } from '../contexts/AuthContext';
 
 const Settings: React.FC = () => {
+  const { user, currentStore } = useAuth();
   const [activeTab, setActiveTab] = useState('store');
   const [storeSettings, setStoreSettings] = useState<StoreSettings>({
+    id: '',
+    store_id: '',
     name: 'Toko KasirKu',
     address: 'Jl. Contoh No. 123, Jakarta',
     phone: '021-12345678',
     email: 'info@kasirku.com',
-    tax: 11
+    currency: 'IDR',
+    tax_rate: 11,
+    low_stock_threshold: 10,
+    enable_notifications: true,
+    enable_email_reports: false,
+    report_frequency: 'monthly',
+    created_at: '',
+    updated_at: ''
   });
 
   const [userProfile, setUserProfile] = useState<UserProfile>({
@@ -83,11 +94,48 @@ const Settings: React.FC = () => {
     { id: 'payment', label: 'Metode Pembayaran', icon: CreditCard }
   ];
 
+  // Load store settings from database
+  useEffect(() => {
+    const loadStoreSettings = async () => {
+      if (!currentStore) return;
+      
+      try {
+        const settings = await db.getStoreSettings(currentStore.id);
+        if (settings) {
+          setStoreSettings(settings);
+        } else {
+          // If no settings exist, create default settings from current store data
+          const defaultSettings: StoreSettings = {
+            id: '',
+            store_id: currentStore.id,
+            name: currentStore.name,
+            address: currentStore.address || '',
+            phone: currentStore.phone || '',
+            email: currentStore.email || '',
+            currency: 'IDR',
+            tax_rate: 11,
+            low_stock_threshold: 10,
+            enable_notifications: true,
+            enable_email_reports: false,
+            report_frequency: 'monthly',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          setStoreSettings(defaultSettings);
+        }
+      } catch (error) {
+        console.error('Error loading store settings:', error);
+      }
+    };
+    
+    loadStoreSettings();
+  }, [currentStore]);
+
   // Load printer settings from database
   useEffect(() => {
     const loadPrinterSettings = async () => {
       try {
-        const settings = await db.getPrinterSettings();
+        const settings = await db.getPrinterSettings(currentStore?.id);
         if (settings) {
           setPrinterSettings(settings);
           localStorage.setItem('printerSettings', JSON.stringify(settings));
@@ -115,12 +163,21 @@ const Settings: React.FC = () => {
     };
     
     loadPrinterSettings();
-  }, []);
+  }, [currentStore]);
 
-  const handleSaveStoreSettings = () => {
-    // Simpan pengaturan toko
-    console.log('Saving store settings:', storeSettings);
-    alert('Pengaturan toko berhasil disimpan!');
+  const handleSaveStoreSettings = async () => {
+    if (!currentStore) {
+      alert('Tidak ada toko yang dipilih!');
+      return;
+    }
+
+    try {
+      await db.updateStoreSettings(storeSettings, currentStore.id);
+      alert('Pengaturan toko berhasil disimpan!');
+    } catch (error) {
+      console.error('Error saving store settings:', error);
+      alert('Gagal menyimpan pengaturan toko');
+    }
   };
 
   const handleSaveProfile = () => {
@@ -309,8 +366,8 @@ const Settings: React.FC = () => {
             </label>
             <input
               type="number"
-              value={storeSettings.tax}
-              onChange={(e) => setStoreSettings({...storeSettings, tax: Number(e.target.value)})}
+              value={storeSettings.tax_rate}
+              onChange={(e) => setStoreSettings({...storeSettings, tax_rate: Number(e.target.value)})}
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-slate-700 dark:text-slate-100"
             />
           </div>

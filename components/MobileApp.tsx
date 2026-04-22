@@ -10,6 +10,7 @@ import { Product, Transaction, TransactionItem } from '../types';
 import { formatCurrency, generateId, parseFormattedNumber } from '../utils';
 import { Session } from '@supabase/supabase-js';
 import MobileSettings from './MobileSettings';
+import { useAuth } from '../contexts/AuthContext';
 
 // --- MODULAR COMPONENTS ---
 
@@ -601,6 +602,11 @@ const MobileApp: React.FC<MobileAppProps> = ({
 }) => {
   const location = useLocation();
   
+  // Fallback: if storeSettings is null, use currentStore data from AuthContext
+  const { currentStore } = useAuth();
+  // console.log('storeSettings from props:', storeSettings);
+  // console.log('currentStore from auth:', currentStore);
+  
   const getPageTitle = (path: string) => {
     if (path === '/') return 'Dashboard';
     if (path === '/products') return 'Produk';
@@ -620,9 +626,9 @@ const MobileApp: React.FC<MobileAppProps> = ({
           <Route path="/products" element={<MobileProducts products={products} setProducts={setProducts} onStockEntry={handleAddTransaction} />} />
           <Route path="/pos" element={<MobilePOS products={products} onCheckout={handleAddTransaction} cart={cart} setCart={setCart} />} />
           <Route path="/transactions" element={<div className="p-5"><TransactionList transactions={transactions} /></div>} />
-          <Route path="/settings" element={<MobileSettings session={session} handleLogout={handleLogout} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} storeSettings={storeSettings} />} />
+          <Route path="/settings" element={<MobileSettings session={session} handleLogout={handleLogout} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} storeSettings={currentStore} />} />
           {/* Fallback for reports route if accessed */}
-          <Route path="/reports" element={<MobileSettings session={session} handleLogout={handleLogout} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} storeSettings={storeSettings} />} />
+          <Route path="/reports" element={<MobileSettings session={session} handleLogout={handleLogout} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} storeSettings={currentStore} />} />
         </Routes>
       </main>
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Store, 
   Package, 
@@ -79,11 +79,30 @@ const MobileSettings: React.FC<MobileSettingsProps> = ({
     }
   ];
   
-  // Store settings state
-  const [storeName, setStoreName] = useState(storeSettings?.name || 'InvMaster POS');
-  const [storeAddress, setStoreAddress] = useState(storeSettings?.address || 'Gedung Sudirman Lantai 4, Jakarta');
-  const [storePhone, setStorePhone] = useState(storeSettings?.phone || '(021) 12345678');
-  const [storeEmail, setStoreEmail] = useState(storeSettings?.email || 'info@invmaster.com');
+  // Store settings state with useMemo for optimization
+  // console.log(storeSettings);
+
+  // Memoized store settings to avoid unnecessary re-renders
+  const storeSettingsValues = useMemo(() => ({
+    storeName: storeSettings?.name || 'InvMaster POS',
+    storeAddress: storeSettings?.address || 'Gedung Sudirman Lantai 4, Jakarta',
+    storePhone: storeSettings?.phone || '(021) 12345678',
+    storeEmail: storeSettings?.email || 'info@invmaster.com'
+  }), [storeSettings]);
+
+  // Local state for form editing
+  const [storeName, setStoreName] = useState(storeSettingsValues.storeName);
+  const [storeAddress, setStoreAddress] = useState(storeSettingsValues.storeAddress);
+  const [storePhone, setStorePhone] = useState(storeSettingsValues.storePhone);
+  const [storeEmail, setStoreEmail] = useState(storeSettingsValues.storeEmail);
+
+  // Update local state when storeSettings prop changes
+  useEffect(() => {
+    setStoreName(storeSettingsValues.storeName);
+    setStoreAddress(storeSettingsValues.storeAddress);
+    setStorePhone(storeSettingsValues.storePhone);
+    setStoreEmail(storeSettingsValues.storeEmail);
+  }, [storeSettingsValues]);
   
   // Notification settings state
   const [lowStockAlert, setLowStockAlert] = useState(true);
@@ -104,35 +123,6 @@ const MobileSettings: React.FC<MobileSettingsProps> = ({
 
   return (
     <div className="p-5 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Store Info Card */}
-      {/* <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700/50">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg">
-            <Store size={32} />
-          </div>
-          <div className="flex-1">
-            <h2 className="text-xl font-black text-slate-800 dark:text-slate-100">{storeName}</h2>
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-              {session?.user?.email || 'admin@invmaster.com'}
-            </p>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-purple-50 dark:bg-purple-500/10 p-3 rounded-2xl text-center">
-            <p className="text-xs font-bold text-purple-600 dark:text-purple-400 mb-1">Mode</p>
-            <p className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center justify-center gap-1">
-              <Smartphone size={14} />
-              Mobile
-            </p>
-          </div>
-          <div className="bg-emerald-50 dark:bg-emerald-500/10 p-3 rounded-2xl text-center">
-            <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mb-1">Status</p>
-            <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Online</p>
-          </div>
-        </div>
-      </div> */}
-
       {/* Settings Menu */}
       <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700/50 overflow-hidden">
         {/* Store Settings */}
