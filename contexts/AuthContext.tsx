@@ -229,6 +229,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('Database tidak tersedia. Pastikan Supabase sudah dikonfigurasi dengan benar.');
       }
 
+      // Check if email already exists
+      console.log('Checking if email exists:', userData.email);
+      const { data: existingUser, error: checkError } = await supabase
+        .from('users')
+        .select('email')
+        .eq('email', userData.email)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.log('Error checking email existence:', checkError);
+        throw checkError;
+      }
+
+      if (existingUser) {
+        console.log('Email already exists:', existingUser.email);
+        throw {
+          code: '23505',
+          message: 'duplicate key value violates unique constraint "users_email_key"',
+          details: null,
+          hint: null
+        };
+      }
+
       // Create user with password hash
       const passwordHash = btoa(password || ''); // Simple encoding for demo
       const { data: newUser, error: userError } = await supabase
@@ -290,6 +313,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     } catch (error) {
       console.error('Registration failed:', error);
+      // {
+      //     "code": "42501",
+      //     "details": null,
+      //     "hint": null,
+      //     "message": "new row violates row-level security policy for table \"users\""
+      // }
+
+      // {
+      //     "code": "23505",
+      //     "details": null,
+      //     "hint": null,
+      //     "message": "duplicate key value violates unique constraint \"users_email_key\""
+      // }
       throw error;
     } finally {
       setIsLoading(false);

@@ -2,100 +2,106 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Store, Building2, Mail, Phone, MapPin, User, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+// Zod schema for registration form validation
+const registrationSchema = z.object({
+  storeName: z.string().min(1, 'Nama toko wajib diisi'),
+  storeEmail: z.string().email('Email toko tidak valid'),
+  storePhone: z.string().min(1, 'Telepon toko wajib diisi'),
+  storeAddress: z.string().min(1, 'Alamat toko wajib diisi'),
+  storeDescription: z.string().optional(),
+  fullName: z.string().min(1, 'Nama lengkap wajib diisi'),
+  // email: z.string().email('Email tidak valid').optional(),
+  // phone: z.string().min(1, 'Telepon wajib diisi').optional(),
+  password: z.string().min(6, 'Password minimal 6 karakter'),
+  confirmPassword: z.string().min(1, 'Konfirmasi password wajib diisi')
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Password dan konfirmasi password tidak cocok',
+  path: ['confirmPassword']
+});
 
 const RegisterStore: React.FC = () => {
   const navigate = useNavigate();
   const { registerStore } = useAuth();
   
-  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  
-  const [formData, setFormData] = useState({
-    // Store data
-    storeName: '',
-    storeDescription: '',
-    storeAddress: '',
-    storePhone: '',
-    storeEmail: '',
-    
-    // User data
-    fullName: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: ''
+  const [isLoading, setIsLoading] = useState(false);
+
+  const { 
+    register, 
+    handleSubmit: handleFormSubmit, 
+    formState: { errors, isSubmitting }, 
+    reset 
+  } = useForm({
+    resolver: zodResolver(registrationSchema),
+    defaultValues: {
+      // Store data
+      storeName: '',
+      storeDescription: '',
+      storeAddress: '',
+      storePhone: '',
+      storeEmail: '',
+      
+      // User data
+      fullName: '',
+      password: '',
+      confirmPassword: ''
+    }
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: any) => {
+    console.log('Form data submitted:', data);
     setError('');
-    setIsLoading(true);
-
+    setIsLoading(true); // Enable loading state
+    
+    let registrationSuccessful = false;
+    
     try {
-      // Validation
-      if (!formData.password) {
-        throw new Error('Password wajib diisi');
-      }
-
-      if (!formData.confirmPassword) {
-        throw new Error('Konfirmasi password wajib diisi');
-      }
-
-      if (formData.password !== formData.confirmPassword) {
-        throw new Error('Password dan konfirmasi password tidak cocok. Pastikan keduanya sama.');
-      }
-
-      if (formData.password.length < 6) {
-        throw new Error('Password minimal 6 karakter');
-      }
-
-      if (!formData.storeName || !formData.storeEmail || !formData.password) {
-        throw new Error('Semua field wajib diisi');
-      }
-      console.log('Form data', formData);
-      // {
-      //     "storeName": "Toko ABC",
-      //     "storeDescription": "Toko Serba Ada",
-      //     "storeAddress": "Contoh 123",
-      //     "storePhone": "0823334444990",
-      //     "storeEmail": "demo@tokoabc.com",
-      //     "fullName": "Pak Ahmad Baha Choirudin",
-      //     "email": "",
-      //     "phone": "",
-      //     "password": "admin1234",
-      //     "confirmPassword": "admin1234"
-      // }
-
       // Register store
       console.log('Calling registerStore function...');
       const result = await registerStore(
         {
-          name: formData.storeName,
-          description: formData.storeDescription,
-          address: formData.storeAddress,
-          phone: formData.storePhone,
-          email: formData.storeEmail
+          name: data.storeName,
+          description: data.storeDescription,
+          address: data.storeAddress,
+          phone: data.storePhone,
+          email: data.storeEmail
         },
         {
-          email: formData.storeEmail,
-          full_name: formData.fullName,
-          phone: formData.storePhone
+          email: data.storeEmail,
+          full_name: data.fullName,
+          phone: data.storePhone
         },
-        formData.password
+        data.password
       );
-      console.log('Registration result:', result);
       
-      // Show success message
+      console.log('Registration result:', result);
+      registrationSuccessful = true;
+    } catch (err: any) {
+      console.error('Registration error:', err);
+      
+      let errorMessage = 'Registration failed: ';
+      
+      if (err.code === '23505' && err.message?.includes('users_email_key')) {
+        errorMessage += err.message;
+      } else if (err.message) {
+        errorMessage += err.message;
+      } else {
+        errorMessage += 'Terjadi kesalahan saat mendaftar';
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false); // Disable loading state
+    }
+
+    // Show success message and navigate only if registration was successful
+    if (registrationSuccessful) {
       console.log('Registration successful! Setting success message...');
       setSuccess('Toko Anda berhasil didaftarkan! Anda akan dialihkan ke halaman login...');
       
@@ -107,11 +113,6 @@ const RegisterStore: React.FC = () => {
         console.log('Navigating to login page...');
         navigate('/login');
       }, 2000);
-    } catch (error: any) {
-      console.error('Registration error:', error);
-      setError(error.message || 'Terjadi kesalahan saat mendaftar');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -130,7 +131,8 @@ const RegisterStore: React.FC = () => {
           </p>
         </div>
 
-        {error && (
+        {/* {console.log('Rendering - error state:', error)} */}
+        {error && error !== '' && (
           <div className="mb-6 p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-2xl">
             <p className="text-rose-600 dark:text-rose-400 text-sm font-medium">{error}</p>
           </div>
@@ -142,7 +144,7 @@ const RegisterStore: React.FC = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleFormSubmit(onSubmit)} className="space-y-6">
           {/* Store Information */}
           <div className="space-y-4">
             <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
@@ -156,13 +158,13 @@ const RegisterStore: React.FC = () => {
               </label>
               <input
                 type="text"
-                name="storeName"
-                value={formData.storeName}
-                onChange={handleInputChange}
+                {...register('storeName')}
                 className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
                 placeholder="Toko ABC"
-                required
               />
+              {errors.storeName && (
+                <p className="text-rose-500 text-sm mt-1">{errors.storeName.message}</p>
+              )}
             </div>
 
             <div>
@@ -170,9 +172,7 @@ const RegisterStore: React.FC = () => {
                 Deskripsi Toko
               </label>
               <textarea
-                name="storeDescription"
-                value={formData.storeDescription}
-                onChange={handleInputChange}
+                {...register('storeDescription')}
                 rows={3}
                 className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all resize-none"
                 placeholder="Deskripsi singkat tentang toko Anda"
@@ -187,12 +187,13 @@ const RegisterStore: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  name="storeAddress"
-                  value={formData.storeAddress}
-                  onChange={handleInputChange}
+                  {...register('storeAddress')}
                   className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
                   placeholder="Jl. Contoh No. 123"
                 />
+                {errors.storeAddress && (
+                  <p className="text-rose-500 text-sm mt-1">{errors.storeAddress.message}</p>
+                )}
               </div>
 
               <div>
@@ -202,12 +203,13 @@ const RegisterStore: React.FC = () => {
                 </label>
                 <input
                   type="tel"
-                  name="storePhone"
-                  value={formData.storePhone}
-                  onChange={handleInputChange}
+                  {...register('storePhone')}
                   className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
                   placeholder="(021) 12345678"
                 />
+                {errors.storePhone && (
+                  <p className="text-rose-500 text-sm mt-1">{errors.storePhone.message}</p>
+                )}
               </div>
             </div>
 
@@ -218,12 +220,13 @@ const RegisterStore: React.FC = () => {
               </label>
               <input
                 type="email"
-                name="storeEmail"
-                value={formData.storeEmail}
-                onChange={handleInputChange}
+                {...register('storeEmail')}
                 className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
                 placeholder="toko@example.com"
               />
+              {errors.storeEmail && (
+                <p className="text-rose-500 text-sm mt-1">{errors.storeEmail.message}</p>
+              )}
             </div>
           </div>
 
@@ -240,12 +243,13 @@ const RegisterStore: React.FC = () => {
               </label>
               <input
                 type="text"
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleInputChange}
+                {...register('fullName')}
                 className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
                 placeholder="John Doe"
               />
+              {errors.fullName && (
+                <p className="text-rose-500 text-sm mt-1">{errors.fullName.message}</p>
+              )}
             </div>
 
             {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -287,13 +291,13 @@ const RegisterStore: React.FC = () => {
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
+                    {...register('password')}
                     className="w-full px-4 py-3 pr-12 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
                     placeholder="Minimal 6 karakter"
-                    required
                   />
+                  {errors.password && (
+                    <p className="text-rose-500 text-sm mt-1">{errors.password.message}</p>
+                  )}
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
@@ -310,13 +314,13 @@ const RegisterStore: React.FC = () => {
                 </label>
                 <input
                   type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
+                  {...register('confirmPassword')}
                   className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
                   placeholder="Ulangi password"
-                  required
                 />
+                {errors.confirmPassword && (
+                  <p className="text-rose-500 text-sm mt-1">{errors.confirmPassword.message}</p>
+                )}
               </div>
             </div>
           </div>

@@ -68,16 +68,20 @@ const Dashboard: React.FC<DashboardProps> = ({ products, transactions }) => {
   }, []);
 
   const stats = useMemo(() => {
-    const totalStock = products.reduce((acc, p) => acc + p.stock, 0);
+    let totalStock = products.reduce((acc, p) => acc + p.stock, 0);
     const lowStockCount = products.filter(p => p.stock <= 5).length;
     
     const incoming = transactions
       .filter(t => t.type === 'IN')
       .reduce((acc, t) => acc + t.items.reduce((sum, item) => sum + item.quantity, 0), 0);
       
-    const outgoing = transactions
+    let outgoing = transactions
       .filter(t => t.type === 'OUT')
       .reduce((acc, t) => acc + t.items.reduce((sum, item) => sum + item.quantity, 0), 0);
+
+    if(outgoing > 0) {
+      totalStock = totalStock - outgoing;
+    }
 
     return { totalStock, lowStockCount, incoming, outgoing };
   }, [products, transactions]);
@@ -86,7 +90,7 @@ const Dashboard: React.FC<DashboardProps> = ({ products, transactions }) => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
     return months.map((month, index) => {
       const filtered = transactions.filter(t => {
-        const d = new Date(t.date);
+        const d = new Date(t.created_at);
         return d.getMonth() === index && d.getFullYear() === selectedYear;
       });
       
