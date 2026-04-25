@@ -35,6 +35,7 @@ import { useDeviceDetect } from './hooks/useDeviceDetect';
 import { Session } from '@supabase/supabase-js';
 import MobileApp from './components/MobileApp';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { Analytics } from "@vercel/analytics/react"
 
 const SidebarItem: React.FC<{ to: string, icon: React.ReactNode, label: string, onClick?: () => void }> = ({ to, icon, label, onClick }) => {
   return (
@@ -186,7 +187,7 @@ const AppContent: React.FC = () => {
                 <Package size={20} />
               </div>
               <div>
-                <h1 className="text-lg font-black text-slate-800 dark:text-slate-100">DTAKasir</h1>
+                <h1 className="text-lg font-black text-slate-800 dark:text-slate-100">{import.meta.env.VITE_APP_NAME}</h1>
                 <p className="text-xs text-slate-500 dark:text-slate-400">{currentStore?.name || 'POS System'}</p>
               </div>
             </div>
@@ -305,6 +306,7 @@ const AppContent: React.FC = () => {
           </div>
         </main>
       </div>
+      <Analytics />
     </BrowserRouter>
   );
 };
