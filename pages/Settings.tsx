@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Store, 
   User, 
@@ -12,7 +13,9 @@ import {
   Edit,
   Trash2,
   Check,
-  X
+  X,
+  AlertCircle,
+  Crown
 } from 'lucide-react';
 import { PrinterSettings, StoreSettings, UserProfile, Staff, PaymentMethod } from '../types';
 import { db } from '../services/db';
@@ -20,58 +23,91 @@ import { useAuth } from '../contexts/AuthContext';
 
 const Settings: React.FC = () => {
   const { user, currentStore } = useAuth();
+  console.log('user', user);
+  console.log('currentStore', currentStore);
   const [activeTab, setActiveTab] = useState('store');
-  const [storeSettings, setStoreSettings] = useState<StoreSettings>({
-    id: '',
-    store_id: '',
-    name: 'Toko KasirKu',
-    address: 'Jl. Contoh No. 123, Jakarta',
-    phone: '021-12345678',
-    email: 'info@kasirku.com',
-    currency: 'IDR',
-    tax_rate: 11,
-    low_stock_threshold: 10,
-    enable_notifications: true,
-    enable_email_reports: false,
-    report_frequency: 'monthly',
-    created_at: '',
-    updated_at: ''
-  });
-
-  const [userProfile, setUserProfile] = useState<UserProfile>({
-    name: 'Admin Utama',
-    email: 'admin@kasirku.com',
-    role: 'Super Admin',
-    avatar: ''
-  });
-
-  const [staff, setStaff] = useState<Staff[]>([
-    {
-      id: '1',
-      name: 'John Doe',
-      email: 'john@kasirku.com',
-      role: 'Kasir',
-      phone: '0812-3456-7890',
-      status: 'active'
-    },
-    {
-      id: '2',
-      name: 'Jane Smith',
-      email: 'jane@kasirku.com',
-      role: 'Admin',
-      phone: '0813-4567-8901',
-      status: 'active'
+  const [storeSettings, setStoreSettings] = useState<StoreSettings>(() => {
+    // Initialize with currentStore data if available, otherwise use defaults
+    if (currentStore) {
+      return {
+        id: '',
+        store_id: currentStore.id,
+        name: currentStore.name,
+        address: currentStore.address || '',
+        phone: currentStore.phone || '',
+        email: currentStore.email || '',
+        currency: 'IDR',
+        tax_rate: 11,
+        low_stock_threshold: 10,
+        enable_notifications: true,
+        enable_email_reports: false,
+        report_frequency: 'monthly',
+        created_at: currentStore.created_at,
+        updated_at: currentStore.updated_at
+      };
     }
-  ]);
+    
+    // Default values if no currentStore
+    return {
+      id: '',
+      store_id: '',
+      name: 'Toko KasirKu',
+      address: 'Jl. Contoh No. 123, Jakarta',
+      phone: '021-12345678',
+      email: 'info@kasirku.com',
+      currency: 'IDR',
+      tax_rate: 11,
+      low_stock_threshold: 10,
+      enable_notifications: true,
+      enable_email_reports: false,
+      report_frequency: 'monthly',
+      created_at: '',
+      updated_at: ''
+    };
+  });
 
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([
-    { id: '1', name: 'Tunai', type: 'cash', isActive: true },
-    { id: '2', name: 'Kartu Debit', type: 'card', isActive: true },
-    { id: '3', name: 'Kartu Kredit', type: 'card', isActive: true },
-    { id: '4', name: 'GoPay', type: 'ewallet', isActive: false },
-    { id: '5', name: 'OVO', type: 'ewallet', isActive: false },
-    { id: '6', name: 'Transfer Bank', type: 'bank_transfer', isActive: true }
-  ]);
+  const [userProfile, setUserProfile] = useState<UserProfile>(() => {
+    // Initialize with user data if available, otherwise use defaults
+    if (user) {
+      return {
+        name: user.full_name || 'Admin Utama',
+        email: user.email || 'admin@kasirku.com',
+        role: user.is_owner ? 'Owner' : user.is_subscribe ? 'Premium User' : 'User',
+        avatar: ''
+      };
+    }
+    
+    // Default values if no user
+    return {
+      name: 'Admin Utama',
+      email: 'admin@kasirku.com',
+      role: 'Super Admin',
+      avatar: ''
+    };
+  });
+
+  const [staff, setStaff] = useState<Staff[]>([]);
+
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod>(() => {
+  // Different payment methods based on user type
+  if (user?.is_owner || user?.is_subscribe) {
+    // Premium users get all payment methods
+    return [
+      { id: '1', name: 'Tunai', type: 'cash', isActive: true },
+      { id: '2', name: 'Kartu Debit', type: 'card', isActive: true },
+      { id: '3', name: 'Kartu Kredit', type: 'card', isActive: true },
+      { id: '4', name: 'GoPay', type: 'ewallet', isActive: false },
+      { id: '5', name: 'OVO', type: 'ewallet', isActive: false },
+      { id: '6', name: 'Transfer Bank', type: 'bank_transfer', isActive: true }
+    ];
+  } else {
+    // Regular users only get cash and bank transfer
+    return [
+      { id: '1', name: 'Tunai', type: 'cash', isActive: true },
+      { id: '2', name: 'Transfer Bank', type: 'bank_transfer', isActive: true }
+    ];
+  }
+});
 
   const [printerSettings, setPrinterSettings] = useState<PrinterSettings>({
     paperSize: '58mm',
@@ -88,54 +124,18 @@ const Settings: React.FC = () => {
   const tabs = [
     { id: 'store', label: 'Pengaturan Toko', icon: Store },
     { id: 'profile', label: 'Profil', icon: User },
-    { id: 'sync', label: 'Sinkronisasi', icon: RefreshCw },
+    ...(user?.is_owner || user?.is_subscribe ? [{ id: 'sync', label: 'Sinkronisasi', icon: RefreshCw }] : []),
     { id: 'printer', label: 'Printer & Struk', icon: Printer },
     { id: 'staff', label: 'Kelola Staff', icon: Users },
     { id: 'payment', label: 'Metode Pembayaran', icon: CreditCard }
   ];
 
-  // Load store settings from database
-  useEffect(() => {
-    const loadStoreSettings = async () => {
-      if (!currentStore) return;
-      
-      try {
-        const settings = await db.getStoreSettings(currentStore.id);
-        if (settings) {
-          setStoreSettings(settings);
-        } else {
-          // If no settings exist, create default settings from current store data
-          const defaultSettings: StoreSettings = {
-            id: '',
-            store_id: currentStore.id,
-            name: currentStore.name,
-            address: currentStore.address || '',
-            phone: currentStore.phone || '',
-            email: currentStore.email || '',
-            currency: 'IDR',
-            tax_rate: 11,
-            low_stock_threshold: 10,
-            enable_notifications: true,
-            enable_email_reports: false,
-            report_frequency: 'monthly',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-          setStoreSettings(defaultSettings);
-        }
-      } catch (error) {
-        console.error('Error loading store settings:', error);
-      }
-    };
-    
-    loadStoreSettings();
-  }, [currentStore]);
-
+  
   // Load printer settings from database
   useEffect(() => {
     const loadPrinterSettings = async () => {
       try {
-        const settings = await db.getPrinterSettings(currentStore?.id);
+        const settings = await db.getPrinterSettings();
         if (settings) {
           setPrinterSettings(settings);
           localStorage.setItem('printerSettings', JSON.stringify(settings));
@@ -830,28 +830,51 @@ const Settings: React.FC = () => {
   );
 
   return (
-    <div className="p-6">
+    <div className="p-2">
+      {/* tambahkan notice untuk user yang belum subscribe */}
+      {user && !user.is_subscribe && (
+        <div className="mb-6 p-4 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="text-yellow-600 dark:text-yellow-400" size={20} />
+              <div>
+                <h3 className="font-medium text-yellow-800 dark:text-yellow-200">Anda belum berlangganan</h3>
+                <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                  Untuk mengakses semua fitur, silakan berlangganan premium.
+                </p>
+              </div>
+            </div>
+            <Link 
+              to="/subscribe"
+              className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
+            >
+              <Crown size={16} />
+              Berlangganan
+            </Link>
+          </div>
+        </div>
+      )}
+      
       <h1 className="text-2xl font-bold mb-6 text-slate-800 dark:text-slate-100">Pengaturan</h1>
       
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Sidebar */}
-        <div className="lg:w-64">
-          <nav className="space-y-2">
+      <div className="space-y-6">
+        {/* Horizontal Tabs */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-1">
+          <nav className="flex flex-wrap gap-1">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 ${
                     activeTab === tab.id
-                      ? 'bg-purple-600 text-white shadow-lg shadow-purple-200 dark:shadow-none'
-                      : 'text-slate-500 dark:text-slate-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-600 dark:hover:text-purple-400'
+                      ? 'bg-purple-600 text-white shadow-md'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-800 dark:hover:text-slate-200'
                   }`}
                 >
-                  <Icon size={20} />
-                  <span className="font-semibold">{tab.label}</span>
-                  {activeTab === tab.id && <ChevronRight size={16} className="ml-auto" />}
+                  <Icon size={16} className="flex-shrink-0" />
+                  <span className="font-medium whitespace-nowrap">{tab.label}</span>
                 </button>
               );
             })}
@@ -859,7 +882,7 @@ const Settings: React.FC = () => {
         </div>
 
         {/* Content */}
-        <div className="flex-1">
+        <div>
           {activeTab === 'store' && renderStoreSettings()}
           {activeTab === 'profile' && renderProfile()}
           {activeTab === 'sync' && renderSync()}

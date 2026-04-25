@@ -21,6 +21,23 @@ export const db = {
     return data.map((item: any) => item.stores);
   },
 
+  async checkStoreNameExists(storeName: string): Promise<Store | null> {
+    if (!supabase) return null;
+    
+    const { data, error } = await supabase
+      .from('stores')
+      .select('*')
+      .eq('name', storeName)
+      .maybeSingle();
+      
+    if (error) {
+      console.error('Error checking store name:', error);
+      return null;
+    }
+    
+    return data;
+  },
+
   async createStore(storeData: Partial<Store>): Promise<Store> {
     if (!supabase) throw new Error('No supabase connection');
     
@@ -332,13 +349,12 @@ export const db = {
   async getPrinterSettings(storeId?: string): Promise<PrinterSettings | null> {
     if (!supabase) return null;
     
-    let query = supabase.from('printer_settings').select('*');
-    
-    if (storeId) {
-      query = query.eq('store_id', storeId);
-    }
-    
-    const { data, error } = await query.maybeSingle();
+    // For now, get first printer settings without store_id filter
+    // TODO: Update this when store_id column is added to printer_settings table
+    const { data, error } = await supabase
+      .from('printer_settings')
+      .select('*')
+      .maybeSingle();
       
     if (error) {
       console.error('Error fetching printer settings:', error);
@@ -351,9 +367,10 @@ export const db = {
   async setPrinterSettings(settings: PrinterSettings, storeId?: string): Promise<PrinterSettings> {
     if (!supabase) throw new Error('No supabase connection');
     
+    // For now, save without store_id
+    // TODO: Update this when store_id column is added to printer_settings table
     const settingsData = {
       ...settings,
-      store_id: storeId || settings.store_id,
       updated_at: new Date().toISOString()
     };
     

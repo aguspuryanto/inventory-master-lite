@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Store, Building2, Mail, Phone, MapPin, User, Lock, Eye, EyeOff } from 'lucide-react';
+import { Store, Building2, Mail, Phone, MapPin, User, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { db } from '../services/db';
 
 // Zod schema for registration form validation
 const registrationSchema = z.object({
@@ -31,6 +32,20 @@ const RegisterStore: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{
+    storeName?: string;
+    storeEmail?: string;
+  }>({});
+  const [isValidating, setIsValidating] = useState(false);
+
+  // Debounce function for real-time validation
+  const debounce = useCallback((func: Function, delay: number) => {
+    let timeoutId: NodeJS.Timeout;
+    return (...args: any[]) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => func.apply(null, args), delay);
+    };
+  }, []);
 
   const { 
     register, 
@@ -54,6 +69,90 @@ const RegisterStore: React.FC = () => {
     }
   });
 
+  // Real-time validation functions
+  const validateStoreName = useCallback(async (name: string) => {
+    if (!name || name.length < 2) {
+      setFieldErrors(prev => ({ ...prev, storeName: undefined }));
+      return;
+    }
+
+    setIsValidating(true);
+    try {
+      const existingStore = await db.checkStoreNameExists(name);
+      if (existingStore) {
+        setFieldErrors(prev => ({
+          ...prev,
+          storeName: `Nama toko "${name}" sudah digunakan. Silakan pilih nama lain.`
+        }));
+      } else {
+        setFieldErrors(prev => ({ ...prev, storeName: undefined }));
+      }
+    } catch (error) {
+      console.error('Error validating store name:', error);
+    } finally {
+      setIsValidating(false);
+    }
+  }, []);
+
+  const validateEmail = useCallback(async (email: string) => {
+    if (!email || !email.includes('@')) {
+      setFieldErrors(prev => ({ ...prev, storeEmail: undefined }));
+      return;
+    }
+
+    setIsValidating(true);
+    try {
+      const existingUser = await db.getUserByEmail(email);
+      if (existingUser) {
+        setFieldErrors(prev => ({
+          ...prev,
+          storeEmail: `Email "${email}" sudah terdaftar. Silakan gunakan email lain atau login.`
+        }));
+      } else {
+        setFieldErrors(prev => ({ ...prev, storeEmail: undefined }));
+      }
+    } catch (error) {
+      console.error('Error validating email:', error);
+    } finally {
+      setIsValidating(false);
+    }
+  }, []);
+
+  // Debounced validation functions
+  const debouncedValidateStoreName = useCallback(debounce(validateStoreName, 500), [validateStoreName]);
+  const debouncedValidateEmail = useCallback(debounce(validateEmail, 500), [validateEmail]);
+
+  // Function to check for duplicate data (for final validation)
+  const checkDuplicates = async (storeName: string, email: string) => {
+    try {
+      // Check for duplicate store name
+      const existingStore = await db.checkStoreNameExists(storeName);
+      if (existingStore) {
+        return {
+          isDuplicate: true,
+          field: 'storeName',
+          message: `Nama toko "${storeName}" sudah digunakan. Silakan pilih nama lain.`
+        };
+      }
+
+      // Check for duplicate email
+      const existingUser = await db.getUserByEmail(email);
+      if (existingUser) {
+        return {
+          isDuplicate: true,
+          field: 'email',
+          message: `Email "${email}" sudah terdaftar. Silakan gunakan email lain atau login.`
+        };
+      }
+
+      return { isDuplicate: false };
+    } catch (error) {
+      console.error('Error checking duplicates:', error);
+      // If error occurs during check, proceed with registration (fail-safe)
+      return { isDuplicate: false };
+    }
+  };
+
   const onSubmit = async (data: any) => {
     console.log('Form data submitted:', data);
     setError('');
@@ -62,8 +161,18 @@ const RegisterStore: React.FC = () => {
     let registrationSuccessful = false;
     
     try {
+      // Check for duplicates before registration
+      console.log('Checking for duplicates...');
+      const duplicateCheck = await checkDuplicates(data.storeName, data.storeEmail);
+      
+      if (duplicateCheck.isDuplicate) {
+        setError(duplicateCheck.message);
+        setIsLoading(false);
+        return;
+      }
+      
       // Register store
-      console.log('Calling registerStore function...');
+      console.log('No duplicates found. Proceeding with registration...');
       const result = await registerStore(
         {
           name: data.storeName,
@@ -85,14 +194,20 @@ const RegisterStore: React.FC = () => {
     } catch (err: any) {
       console.error('Registration error:', err);
       
-      let errorMessage = 'Registration failed: ';
+      let errorMessage = 'Registrasi gagal: ';
       
-      if (err.code === '23505' && err.message?.includes('users_email_key')) {
-        errorMessage += err.message;
+      if (err.code === '23505') {
+        if (err.message?.includes('users_email_key')) {
+          errorMessage += 'Email sudah terdaftar. Silakan gunakan email lain.';
+        } else if (err.message?.includes('stores_name_key') || err.message?.includes('stores_slug_key')) {
+          errorMessage += 'Nama toko sudah digunakan. Silakan pilih nama lain.';
+        } else {
+          errorMessage += 'Data yang Anda masukkan sudah ada dalam sistem.';
+        }
       } else if (err.message) {
         errorMessage += err.message;
       } else {
-        errorMessage += 'Terjadi kesalahan saat mendaftar';
+        errorMessage += 'Terjadi kesalahan saat mendaftar. Silakan coba lagi.';
       }
       
       setError(errorMessage);
@@ -108,11 +223,12 @@ const RegisterStore: React.FC = () => {
       // Clear error if any
       setError('');
       
-      // Navigate to login after 2 seconds
+      // Navigate to login after 1 second
       setTimeout(() => {
         console.log('Navigating to login page...');
-        navigate('/login');
-      }, 2000);
+        // Use window.location for reliable navigation
+        window.location.href = '/login';
+      }, 1000);
     }
   };
 
@@ -156,14 +272,38 @@ const RegisterStore: React.FC = () => {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Nama Toko *
               </label>
-              <input
-                type="text"
-                {...register('storeName')}
-                className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
-                placeholder="Toko ABC"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  {...register('storeName', {
+                    onChange: (e) => {
+                      debouncedValidateStoreName(e.target.value);
+                    }
+                  })}
+                  className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 transition-all ${
+                    fieldErrors.storeName 
+                      ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-500/20' 
+                      : 'border-slate-200 dark:border-slate-700 focus:border-purple-500 focus:ring-purple-500/20'
+                  }`}
+                  placeholder="Toko ABC"
+                />
+                {isValidating && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+                  </div>
+                )}
+              </div>
               {errors.storeName && (
-                <p className="text-rose-500 text-sm mt-1">{errors.storeName.message}</p>
+                <p className="text-rose-500 text-sm mt-1 flex items-center gap-1">
+                  <AlertCircle size={14} />
+                  {errors.storeName.message}
+                </p>
+              )}
+              {fieldErrors.storeName && !errors.storeName && (
+                <p className="text-amber-600 text-sm mt-1 flex items-center gap-1">
+                  <AlertCircle size={14} />
+                  {fieldErrors.storeName}
+                </p>
               )}
             </div>
 
@@ -218,14 +358,38 @@ const RegisterStore: React.FC = () => {
                 <Mail size={16} className="inline mr-1" />
                 Email Toko
               </label>
-              <input
-                type="email"
-                {...register('storeEmail')}
-                className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
-                placeholder="toko@example.com"
-              />
+              <div className="relative">
+                <input
+                  type="email"
+                  {...register('storeEmail', {
+                    onChange: (e) => {
+                      debouncedValidateEmail(e.target.value);
+                    }
+                  })}
+                  className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 transition-all ${
+                    fieldErrors.storeEmail 
+                      ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-500/20' 
+                      : 'border-slate-200 dark:border-slate-700 focus:border-purple-500 focus:ring-purple-500/20'
+                  }`}
+                  placeholder="toko@example.com"
+                />
+                {isValidating && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+                  </div>
+                )}
+              </div>
               {errors.storeEmail && (
-                <p className="text-rose-500 text-sm mt-1">{errors.storeEmail.message}</p>
+                <p className="text-rose-500 text-sm mt-1 flex items-center gap-1">
+                  <AlertCircle size={14} />
+                  {errors.storeEmail.message}
+                </p>
+              )}
+              {fieldErrors.storeEmail && !errors.storeEmail && (
+                <p className="text-amber-600 text-sm mt-1 flex items-center gap-1">
+                  <AlertCircle size={14} />
+                  {fieldErrors.storeEmail}
+                </p>
               )}
             </div>
           </div>

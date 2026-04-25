@@ -27,6 +27,7 @@ import Login from './pages/Login';
 import RegisterStore from './pages/RegisterStore';
 import UserManagement from './pages/UserManagement';
 import Settings from './pages/Settings';
+import Subscribe from './pages/Subscribe';
 import { Product, Transaction, TransactionItem } from './types';
 import { db } from './services/db';
 import { supabase } from './lib/supabase';
@@ -66,7 +67,7 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      console.log('_currentStore', currentStore);
+      // console.log('_currentStore', currentStore);
       if (supabase && currentStore) {
         try {
           
@@ -296,6 +297,7 @@ const AppContent: React.FC = () => {
                 <Route path="/reports" element={<Reports transactions={transactions} products={products} />} />
                 <Route path="/user-management" element={<UserManagement />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/subscribe" element={<Subscribe />} />
                 <Route path="/register" element={<RegisterStore />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
