@@ -23,6 +23,11 @@ import { useAuth } from '../contexts/AuthContext';
 
 const Settings: React.FC = () => {
   const { user, currentStore } = useAuth();
+  
+  // Helper function to get correct storeId for database operations
+  const getStoreId = () => {
+    return user?.email === 'admin@example.com' ? null : currentStore?.id;
+  };
   console.log('user', user);
   console.log('currentStore', currentStore);
   const [activeTab, setActiveTab] = useState('store');
@@ -31,7 +36,7 @@ const Settings: React.FC = () => {
     if (currentStore) {
       return {
         id: '',
-        store_id: currentStore.id,
+        store_id: getStoreId(),
         name: currentStore.name,
         address: currentStore.address || '',
         phone: currentStore.phone || '',
@@ -172,7 +177,7 @@ const Settings: React.FC = () => {
     }
 
     try {
-      await db.updateStoreSettings(storeSettings, currentStore.id);
+      await db.updateStoreSettings(storeSettings, getStoreId());
       alert('Pengaturan toko berhasil disimpan!');
     } catch (error) {
       console.error('Error saving store settings:', error);

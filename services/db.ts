@@ -114,7 +114,7 @@ export const db = {
     }));
   },
 
-  async addProduct(product: Product, storeId: string) {
+  async addProduct(product: Product, storeId: string | null) {
     if (!supabase) return product;
     
     const { data, error } = await supabase
@@ -137,7 +137,7 @@ export const db = {
     return data;
   },
 
-  async updateProduct(product: Product, storeId: string) {
+  async updateProduct(product: Product, storeId: string | null) {
     if (!supabase) return product;
     
     const { data, error } = await supabase
@@ -160,7 +160,7 @@ export const db = {
     return data;
   },
 
-  async deleteProduct(id: string, storeId: string) {
+  async deleteProduct(id: string, storeId: string | null) {
     if (!supabase) return;
     
     const { error } = await supabase
@@ -214,7 +214,7 @@ export const db = {
     }));
   },
 
-  async addTransaction(tx: Transaction, storeId: string) {
+  async addTransaction(tx: Transaction, storeId: string | null) {
     if (!supabase) return;
     
     // 1. Insert Transaction
@@ -278,14 +278,18 @@ export const db = {
   },
 
   // store settings
-  async getStoreSettings(storeId: string): Promise<StoreSettings | null> {
+  async getStoreSettings(storeId: string | null): Promise<StoreSettings | null> {
     if (!supabase) return null;
     
-    const { data, error } = await supabase
+    let query = supabase
       .from('store_settings')
-      .select('*')
-      .eq('store_id', storeId)
-      .maybeSingle();
+      .select('*');
+    
+    if (storeId) {
+      query = query.eq('store_id', storeId);
+    }
+    
+    const { data, error } = await query.maybeSingle();
       
     if (error) {
       console.error('Error fetching settings:', error);
@@ -295,7 +299,7 @@ export const db = {
     return data;
   },
 
-  async updateStoreSettings(settings: Partial<StoreSettings>, storeId: string): Promise<StoreSettings> {
+  async updateStoreSettings(settings: Partial<StoreSettings>, storeId: string | null): Promise<StoreSettings> {
     if (!supabase) throw new Error('No supabase connection');
     
     const { data, error } = await supabase

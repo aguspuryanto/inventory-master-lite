@@ -29,7 +29,12 @@ interface POSProps {
 }
 
 const POS: React.FC<POSProps> = ({ products, onCheckout, cart, setCart }) => {
-  const { currentStore } = useAuth();
+  const { currentStore, user } = useAuth();
+  
+  // Helper function to get correct storeId for database operations
+  const getStoreId = () => {
+    return user?.email === 'admin@example.com' ? null : currentStore?.id;
+  };
   const [searchTerm, setSearchTerm] = useState('');
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('0');
@@ -57,7 +62,7 @@ const POS: React.FC<POSProps> = ({ products, onCheckout, cart, setCart }) => {
     // Fetch store settings
     const fetchStoreSettings = async () => {
       if (currentStore) {
-        const settings = await db.getStoreSettings(currentStore.id);
+        const settings = await db.getStoreSettings(getStoreId());
         setStoreSettings(settings);
       }
     };

@@ -22,7 +22,12 @@ interface ReportsProps {
 }
 
 const Reports: React.FC<ReportsProps> = ({ transactions, products }) => {
-  const { currentStore } = useAuth();
+  const { currentStore, user } = useAuth();
+  
+  // Helper function to get correct storeId for database operations
+  const getStoreId = () => {
+    return user?.email === 'admin@example.com' ? null : currentStore?.id;
+  };
   const [reportType, setReportType] = useState<'STOK' | 'PENJUALAN'>('STOK');
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [selectedPreset, setSelectedPreset] = useState<'1day' | '7days' | '1month' | '3months' | null>(null);

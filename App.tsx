@@ -72,15 +72,13 @@ const AppContent: React.FC = () => {
       // console.log('_currentStore', currentStore);
       if (supabase && currentStore) {
         try {
-          
-          if (user.email === 'admin@example.com') {
-            currentStore.id = null;
-          }
+          // For admin user, use null as storeId (database handles this correctly)
+          const storeId = user.email === 'admin@example.com' ? null : currentStore.id;
 
           const [storeSettingsData, dbProducts, dbTransactions] = await Promise.all([
-            db.getStoreSettings(currentStore.id),
-            db.getProducts(currentStore.id),
-            db.getTransactions(currentStore.id)
+            db.getStoreSettings(storeId),
+            db.getProducts(storeId),
+            db.getTransactions(storeId)
           ]);
           setStoreSettings(storeSettingsData);
           // console.log('Store Settings:', storeSettingsData);
@@ -125,7 +123,9 @@ const AppContent: React.FC = () => {
     // Save to DB
     if (supabase && currentStore) {
       try {
-        await db.addTransaction(newTx, currentStore.id);
+        // For admin user, use null as storeId (database handles this correctly)
+        const storeId = user.email === 'admin@example.com' ? null : currentStore.id;
+        await db.addTransaction(newTx, storeId);
       } catch (error) {
         console.error("Failed to save transaction to DB:", error);
         alert("Gagal menyimpan transaksi ke database.");

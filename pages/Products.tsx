@@ -27,7 +27,12 @@ interface ProductsProps {
 }
 
 const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry }) => {
-  const { currentStore } = useAuth();
+  const { currentStore, user } = useAuth();
+  
+  // Helper function to get correct storeId for database operations
+  const getStoreId = () => {
+    return user?.email === 'admin@example.com' ? null : currentStore?.id;
+  };
   console.log('currentStore', currentStore);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -85,7 +90,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
     try {
       if (editingProduct) {
         // Save to DB
-        if (supabase && currentStore) await db.updateProduct(productData, currentStore.id);
+        if (supabase && currentStore) await db.updateProduct(productData, getStoreId());
         
         // If stock increased manually, track as IN transaction
         if (productData.stock > editingProduct.stock) {
@@ -107,7 +112,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
         setProducts(prev => prev.map(p => p.id === editingProduct.id ? productData : p));
       } else {
         // Save to DB
-        if (supabase) await db.addProduct(productData, currentStore.id);
+        if (supabase) await db.addProduct(productData, getStoreId());
         
         setProducts(prev => [...prev, productData]);
         if (productData.stock > 0) {
@@ -136,7 +141,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
   const handleDelete = async (id: string) => {
     if (confirm('Hapus barang ini?')) {
       try {
-        if (supabase && currentStore) await db.deleteProduct(id, currentStore.id);
+        if (supabase && currentStore) await db.deleteProduct(id, getStoreId());
         setProducts(prev => prev.filter(p => p.id !== id));
       } catch (error) {
         console.error("Error deleting product:", error);
@@ -165,7 +170,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
           </button>
           <button 
             onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700 shadow-lg shadow-purple-200 dark:shadow-none transition-all"
+            className="flex items-center gap-2 px-6 py-2 bg-orange-600 text-white rounded-xl text-sm font-semibold hover:bg-orange-700 shadow-lg shadow-orange-200 dark:shadow-none transition-all"
           >
             <Plus size={18} />
             Tambah Barang
@@ -182,7 +187,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
               placeholder="Cari nama, kode, atau barcode..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all dark:text-slate-100"
+              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all dark:text-slate-100"
             />
           </div>
           <div className="flex items-center gap-3">
@@ -221,61 +226,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                  {filteredProducts.map(p => (
-                    <tr key={p.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/50 transition-colors group">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 font-bold uppercase">
-                            {p.name.charAt(0)}
-                          </div>
-                          <div>
-                            <p className="font-bold text-slate-700 dark:text-slate-200">{p.name}</p>
-                            <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">{p.code}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-                          <Barcode size={14} />
-                          <span className="text-sm font-mono">{p.barcode || '-'}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Rp {formatCurrency(p.sellingPrice)}</p>
-                        <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-tighter">Profit: Rp {formatCurrency(p.sellingPrice - p.purchasePrice)}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                          p.stock <= 5 ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400' : 
-                          p.stock <= 15 ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
-                        }`}>
-                          {p.stock} pcs
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400 font-medium">
-                        {p.category}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
-                            onClick={() => handleOpenModal(p)}
-                            className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                            title="Edit"
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          <button 
-                            onClick={() => handleDelete(p.id)}
-                            className="p-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
-                            title="Hapus"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {filteredProducts.length === 0 && (
+                  {filteredProducts.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="px-6 py-20 text-center">
                         <div className="flex flex-col items-center gap-2">
@@ -284,6 +235,61 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
                         </div>
                       </td>
                     </tr>
+                  ) : (
+                    filteredProducts.map(p => (
+                      <tr key={p.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/50 transition-colors group">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400 font-bold uppercase">
+                              {p.name.charAt(0)}
+                            </div>
+                            <div>
+                              <p className="font-bold text-slate-700 dark:text-slate-200">{p.name}</p>
+                              <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">{p.code}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                            <Barcode size={14} />
+                            <span className="text-sm font-mono">{p.barcode || '-'}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Rp {formatCurrency(p.sellingPrice)}</p>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-tighter">Profit: Rp {formatCurrency(p.sellingPrice - p.purchasePrice)}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                            p.stock <= 5 ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400' : 
+                            p.stock <= 15 ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
+                          }`}>
+                            {p.stock} pcs
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400 font-medium">
+                          {p.category}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button 
+                              onClick={() => handleOpenModal(p)}
+                              className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                              title="Edit"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                            <button 
+                              onClick={() => handleDelete(p.id)}
+                              className="p-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
+                              title="Hapus"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
                   )}
                 </tbody>
               </table>
@@ -310,7 +316,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
                     required 
                     value={formData.code} 
                     onChange={e => setFormData({...formData, code: e.target.value})}
-                    className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none" 
+                    className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none" 
                   />
                 </div>
                 <div className="space-y-1">
@@ -319,7 +325,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
                     value={formData.barcode} 
                     onChange={e => setFormData({...formData, barcode: e.target.value})}
                     placeholder="Scan atau ketik barcode..."
-                    className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none" 
+                    className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none" 
                   />
                 </div>
               </div>
@@ -355,7 +361,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
                       required 
                       value={formData.sellingPrice} 
                       onChange={e => setFormData({...formData, sellingPrice: formatCurrency(parseFormattedNumber(e.target.value))})}
-                      className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-right font-mono" 
+                      className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none text-right font-mono" 
                     />
                   </div>
                 </div>
@@ -369,7 +375,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
                     required 
                     value={formData.stock} 
                     onChange={e => setFormData({...formData, stock: e.target.value})}
-                    className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-right font-mono" 
+                    className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none text-right font-mono" 
                   />
                 </div>
                 <div className="space-y-1">
@@ -377,7 +383,7 @@ const Products: React.FC<ProductsProps> = ({ products, setProducts, onStockEntry
                   <select 
                     value={formData.category} 
                     onChange={e => setFormData({...formData, category: e.target.value})}
-                    className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"
+                    className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none"
                   >
                     <option value="">Pilih Kategori</option>
                     <option value="Food">Food</option>
