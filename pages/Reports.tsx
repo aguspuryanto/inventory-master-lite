@@ -25,8 +25,50 @@ const Reports: React.FC<ReportsProps> = ({ transactions, products }) => {
   const { currentStore } = useAuth();
   const [reportType, setReportType] = useState<'STOK' | 'PENJUALAN'>('STOK');
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [selectedPreset, setSelectedPreset] = useState<'1day' | '7days' | '1month' | '3months' | null>(null);
+  const [showCustomRange, setShowCustomRange] = useState(false);
   // const [transactionsData, setTransactionsData] = useState<Transaction[]>(transactions);
   const [loading, setLoading] = useState(false);
+
+  // Fungsi untuk menghitung tanggal range berdasarkan preset
+  const setDateRangePreset = (preset: '1day' | '7days' | '1month' | '3months') => {
+    setSelectedPreset(preset);
+    const now = new Date();
+    let startDate = new Date();
+
+    switch (preset) {
+      case '1day':
+        startDate.setDate(now.getDate() - 1);
+        break;
+      case '7days':
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case '1month':
+        startDate.setMonth(now.getMonth() - 1);
+        break;
+      case '3months':
+        startDate.setMonth(now.getMonth() - 3);
+        break;
+    }
+
+    setDateRange({
+      start: startDate.toISOString().split('T')[0],
+      end: now.toISOString().split('T')[0]
+    });
+  };
+
+  // Fungsi untuk reset filter
+  const resetFilter = () => {
+    setSelectedPreset(null);
+    setShowCustomRange(false);
+    setDateRange({ start: '', end: '' });
+  };
+
+  // Fungsi untuk handle custom date range
+  const handleCustomDateChange = (type: 'start' | 'end', date: string) => {
+    setSelectedPreset(null);
+    setDateRange(prev => ({ ...prev, [type]: date }));
+  };
 
   // useEffect(() => {
   //   const fetchTransactions = async () => {
@@ -118,34 +160,84 @@ const Reports: React.FC<ReportsProps> = ({ transactions, products }) => {
       <div className="space-y-4">
           {/* Date Filter */}
           <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
+            <div className="flex flex-col gap-4">
               <div className="flex items-center gap-2">
-                <CalendarIcon size={18} className="text-purple-600 dark:text-purple-400" />
+                <CalendarIcon size={18} className="text-orange-600 dark:text-orange-400" />
                 <span className="font-medium text-slate-700 dark:text-slate-300">Filter Tanggal:</span>
+                {/* Tambahkan filter custom date range */}
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 flex-1">
-                <div className="flex-1">
-                  <DatePicker
-                    value={dateRange.start}
-                    onChange={(date) => setDateRange(prev => ({ ...prev, start: date }))}
-                    placeholder="Dari tanggal"
-                  />
-                </div>
-                <div className="flex-1">
-                  <DatePicker
-                    value={dateRange.end}
-                    onChange={(date) => setDateRange(prev => ({ ...prev, end: date }))}
-                    placeholder="Sampai tanggal"
-                  />
-                </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={selectedPreset === '1day' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDateRangePreset('1day')}
+                  className={selectedPreset === '1day' ? 'bg-orange-600 hover:bg-orange-700' : ''}
+                >
+                  1 Hari
+                </Button>
+                <Button
+                  variant={selectedPreset === '7days' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDateRangePreset('7days')}
+                  className={selectedPreset === '7days' ? 'bg-orange-600 hover:bg-orange-700' : ''}
+                >
+                  7 Hari
+                </Button>
+                <Button
+                  variant={selectedPreset === '1month' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDateRangePreset('1month')}
+                  className={selectedPreset === '1month' ? 'bg-orange-600 hover:bg-orange-700' : ''}
+                >
+                  1 Bulan
+                </Button>
+                <Button
+                  variant={selectedPreset === '3months' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDateRangePreset('3months')}
+                  className={selectedPreset === '3months' ? 'bg-orange-600 hover:bg-orange-700' : ''}
+                >
+                  3 Bulan
+                </Button>
+                <Button
+                  variant={showCustomRange ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setShowCustomRange(!showCustomRange)}
+                  className={showCustomRange ? 'bg-orange-600 hover:bg-orange-700' : ''}
+                >
+                  Custom Range
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resetFilter}
+                  className="shrink-0"
+                >
+                  Reset
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                onClick={() => setDateRange({ start: '', end: '' })}
-                className="shrink-0"
-              >
-                Reset
-              </Button>
+
+              {/* Custom Date Range */}
+              {showCustomRange && (
+                <div className="flex flex-col sm:flex-row gap-3 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg mt-2">
+                  <div className="flex-1">
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1 block">Dari Tanggal</label>
+                    <DatePicker
+                      value={dateRange.start}
+                      onChange={(date) => handleCustomDateChange('start', date || '')}
+                      placeholder="Pilih tanggal mulai"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1 block">Sampai Tanggal</label>
+                    <DatePicker
+                      value={dateRange.end}
+                      onChange={(date) => handleCustomDateChange('end', date || '')}
+                      placeholder="Pilih tanggal akhir"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -202,7 +294,7 @@ const Reports: React.FC<ReportsProps> = ({ transactions, products }) => {
                     transactionItems.map((item, index) => (
                       <tr key={`${item.transactionId}-${index}`}>
                         <td className="px-3 py-2 text-sm text-slate-700 dark:text-slate-300">
-                          {new Date(item.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(item.createdAt).toLocaleDateString('id-ID')}
                         </td>
                         <td className="px-3 py-2 text-sm text-slate-700 dark:text-slate-300">{item.name}</td>
                         <td className="px-3 py-2 text-sm text-slate-700 dark:text-slate-300 text-center">{item.quantity}</td>

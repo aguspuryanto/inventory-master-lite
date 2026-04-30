@@ -4,6 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EzyKasir</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="description" content="Aplikasi kasir modern untuk mengelola penjualan dan inventaris">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/pwa-64x64.png">
+    <link rel="icon" type="image/png" sizes="64x64" href="/pwa-64x64.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/pwa-64x64.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/pwa-64x64.png">
+    
+    <!-- PWA Installation -->
+    <script>
+      // Register service worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {

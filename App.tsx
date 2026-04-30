@@ -28,6 +28,7 @@ import RegisterStore from './pages/RegisterStore';
 import UserManagement from './pages/UserManagement';
 import Settings from './pages/Settings';
 import Subscribe from './pages/Subscribe';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { Product, Transaction, TransactionItem } from './types';
 import { db } from './services/db';
 import { supabase } from './lib/supabase';
@@ -306,6 +307,7 @@ const AppContent: React.FC = () => {
           </div>
         </main>
       </div>
+      <PWAInstallPrompt />
       <Analytics />
     </BrowserRouter>
   );

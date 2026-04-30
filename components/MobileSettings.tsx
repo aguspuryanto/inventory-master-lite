@@ -78,16 +78,13 @@ const MobileSettings: React.FC<MobileSettingsProps> = ({
       display: true
     }
   ];
-  
-  // Store settings state with useMemo for optimization
-  // console.log(storeSettings);
 
   // Memoized store settings to avoid unnecessary re-renders
   const storeSettingsValues = useMemo(() => ({
-    storeName: storeSettings?.name || 'InvMaster POS',
+    storeName: storeSettings?.name || 'EzyKasir',
     storeAddress: storeSettings?.address || 'Gedung Sudirman Lantai 4, Jakarta',
     storePhone: storeSettings?.phone || '(021) 12345678',
-    storeEmail: storeSettings?.email || 'info@invmaster.com'
+    storeEmail: storeSettings?.email || 'info@ezykasir.com'
   }), [storeSettings]);
 
   // Local state for form editing

@@ -24,6 +24,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [userStores, setUserStores] = useState<Store[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // app name
+  const appName = import.meta.env.VITE_APP_NAME || 'EzyKasir';
+
   // Load user data from localStorage on mount
   useEffect(() => {
     const loadUserData = () => {

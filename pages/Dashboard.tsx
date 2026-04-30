@@ -174,9 +174,9 @@ const Dashboard: React.FC<DashboardProps> = ({ products, transactions }) => {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 gap-8">
         {/* Main Chart */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm transition-colors duration-200">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm transition-colors duration-200">
           <div className="flex items-center justify-between mb-8">
             <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Statistik Pergerakan Barang {selectedYear}</h3>
             <div className="flex gap-4">
@@ -225,43 +225,6 @@ const Dashboard: React.FC<DashboardProps> = ({ products, transactions }) => {
                 />
               </BarChart>
             </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Low Stock Sidebar */}
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm transition-colors duration-200">
-          <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg mb-6 flex items-center gap-2">
-            Peringatan Stok <span className="text-xs bg-rose-500 text-white px-2 py-0.5 rounded-full">{stats.lowStockCount}</span>
-          </h3>
-          <div className="space-y-4">
-            {products
-              .filter(p => p.stock <= 10)
-              .sort((a, b) => a.stock - b.stock)
-              .slice(0, 6)
-              .map(p => (
-                <div key={p.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border border-transparent hover:border-slate-100 dark:hover:border-slate-600">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-400 dark:text-slate-300">
-                      {p.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200 leading-tight">{p.name}</p>
-                      <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider">{p.code}</p>
-                    </div>
-                  </div>
-                  <div className={`text-sm font-bold px-2 py-1 rounded ${p.stock <= 5 ? 'text-rose-600 bg-rose-50 dark:bg-rose-900/30 dark:text-rose-400' : 'text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400'}`}>
-                    {p.stock} <span className="text-[10px] font-medium opacity-70">pcs</span>
-                  </div>
-                </div>
-              ))}
-            {stats.lowStockCount === 0 && (
-              <div className="text-center py-10">
-                <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Package size={32} />
-                </div>
-                <p className="text-slate-500 dark:text-slate-400 text-sm">Semua stok terpantau aman.</p>
-              </div>
-            )}
           </div>
         </div>
       </div>
