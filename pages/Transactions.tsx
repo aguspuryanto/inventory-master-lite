@@ -36,6 +36,12 @@ const Transactions: React.FC<TransactionsProps> = ({ transactions }) => {
       const matchesType = filterType === 'ALL' || t.type === filterType;
       return matchesSearch && matchesType;
     });
+
+    const subtotal = transactions.reduce((sum, t) => sum + (t.items?.reduce((itemSum, item) => itemSum + item.subtotal, 0) || 0), 0);
+    transactions.subtotal = subtotal;
+    
+    return transactions;
+    console.log(transactions);
   }, [transactions, searchTerm, filterType]);
 
   return (
@@ -211,7 +217,7 @@ const Transactions: React.FC<TransactionsProps> = ({ transactions }) => {
                               <tfoot className="border-t border-slate-100 dark:border-slate-700">
                                 <tr>
                                   <td colSpan={3} className="pt-2 text-right font-bold text-slate-600 dark:text-slate-400">Total Transaksi:</td>
-                                  <td className="pt-2 text-right font-bold text-slate-800 dark:text-slate-100">Rp {formatCurrency(t.amount)}</td>
+                                  <td className="pt-2 text-right font-bold text-slate-800 dark:text-slate-100">Rp {formatCurrency(t.subtotal - (t.discount_amount || 0))}</td>
                                 </tr>
                               </tfoot>
                             </table>
