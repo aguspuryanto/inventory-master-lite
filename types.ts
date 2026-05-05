@@ -32,6 +32,7 @@ export interface Transaction {
   items: TransactionItem[];
   discount: number;
   discount_amount: number;
+  invoice: string;
 }
 
 export interface MonthlyStats {
@@ -81,6 +82,7 @@ export type UserRole = 'owner' | 'admin' | 'staff';
 
 export interface AuthContext {
   user: User | null;
+  token: string | null;
   currentStore: Store | null;
   userStores: Store[];
   isLoading: boolean;

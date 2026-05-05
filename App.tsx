@@ -30,8 +30,8 @@ import Settings from './pages/Settings';
 import Subscribe from './pages/Subscribe';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { Product, Transaction, TransactionItem } from './types';
-import { db } from './services/db';
-import { supabase } from './lib/supabase';
+import { api } from './services/api';
+const API_BASE_URL = import.meta.env.VITE_APP_API || '';
 import { useDeviceDetect } from './hooks/useDeviceDetect';
 import { Session } from '@supabase/supabase-js';
 import MobileApp from './components/MobileApp';
@@ -52,9 +52,11 @@ const SidebarItem: React.FC<{ to: string, icon: React.ReactNode, label: string, 
 };
 
 const AppContent: React.FC = () => {
-  const { user, currentStore, logout, isLoading: authLoading } = useAuth();
+  const { user, token, currentStore, logout, isLoading: authLoading } = useAuth();
   // console.log('user', user);
+  // console.log('token', token);
   // console.log('currentStore', currentStore);
+  // console.log('authLoading', authLoading);
   const [products, setProducts] = useState<Product[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [storeSettings, setStoreSettings] = useState<any>(null);
@@ -63,33 +65,33 @@ const AppContent: React.FC = () => {
     return savedCart ? JSON.parse(savedCart) : [];
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isSupabaseConfigured, setIsSupabaseConfigured] = useState(!!supabase);
+  const [isApiConfigured, setIsApiConfigured] = useState(!!API_BASE_URL);
   const [isLoading, setIsLoading] = useState(true);
   const { isMobile, isDesktop } = useDeviceDetect();
 
   useEffect(() => {
     const loadData = async () => {
       // console.log('_currentStore', currentStore);
-      if (supabase && currentStore) {
+      // if (API_BASE_URL && currentStore) {
         try {
           // For admin user, use null as storeId (database handles this correctly)
           const storeId = user.email === 'admin@example.com' ? null : currentStore.id;
-
+          console.log('storeId', storeId);
           const [storeSettingsData, dbProducts, dbTransactions] = await Promise.all([
-            db.getStoreSettings(storeId),
-            db.getProducts(storeId),
-            db.getTransactions(storeId)
+            api.getStoreSettings(storeId),
+            api.getProducts(storeId),
+            api.getTransactions(storeId)
           ]);
           setStoreSettings(storeSettingsData);
-          // console.log('Store Settings:', storeSettingsData);
+          // // console.log('Store Settings:', storeSettingsData);
           setProducts(dbProducts);
-          // console.log('Products:', dbProducts);
+          // // console.log('Products:', dbProducts);
           setTransactions(dbTransactions);
           // console.log('Transactions:', dbTransactions);
         } catch (error) {
-          console.error("Error loading data from Supabase:", error);
+          console.error("Error loading data from API:", error);
         }
-      }
+      // }
       setIsLoading(false);
     };
 
@@ -120,14 +122,16 @@ const AppContent: React.FC = () => {
       });
     });
 
-    // Save to DB
-    if (supabase && currentStore) {
+    // Save to API
+    if (API_BASE_URL && currentStore) {
       try {
         // For admin user, use null as storeId (database handles this correctly)
         const storeId = user.email === 'admin@example.com' ? null : currentStore.id;
-        await db.addTransaction(newTx, storeId);
+        // TODO: Implement addTransaction API endpoint
+        // await api.addTransaction(newTx, storeId);
+        console.log("Transaction saved locally - API endpoint not implemented yet");
       } catch (error) {
-        console.error("Failed to save transaction to DB:", error);
+        console.error("Failed to save transaction to API:", error);
         alert("Gagal menyimpan transaksi ke database.");
       }
     }
@@ -276,12 +280,12 @@ const AppContent: React.FC = () => {
           </header>
 
           <div className="p-4 lg:p-8 flex-1 overflow-y-auto relative">
-            {!isSupabaseConfigured && (
+            {!isApiConfigured && (
               <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-800 dark:text-amber-200 text-sm flex items-start gap-3">
                 <div className="mt-0.5">?</div>
                 <div>
-                  <p className="font-bold mb-1">Database Supabase Belum Dikonfigurasi</p>
-                  <p>Aplikasi saat ini berjalan menggunakan data dummy di memori (perubahan akan hilang saat halaman direfresh). Untuk mengaktifkan penyimpanan permanen, tambahkan <code>VITE_SUPABASE_URL</code> dan <code>VITE_SUPABASE_ANON_KEY</code> di pengaturan Environment Variables.</p>
+                  <p className="font-bold mb-1">API Belum Dikonfigurasi</p>
+                  <p>Aplikasi saat ini berjalan menggunakan data dummy di memori (perubahan akan hilang saat halaman direfresh). Untuk mengaktifkan penyimpanan permanen, tambahkan <code>VITE_APP_API</code> di pengaturan Environment Variables.</p>
                 </div>
               </div>
             )}

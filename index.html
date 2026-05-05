@@ -14,18 +14,16 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/pwa-64x64.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/pwa-64x64.png">
     
-    <!-- PWA Installation -->
+    <!-- Service Worker Uninstallation -->
     <script>
-      // Register service worker
+      // Unregister any existing service workers
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((registration) => {
-              console.log('SW registered: ', registration);
-            })
-            .catch((registrationError) => {
-              console.log('SW registration failed: ', registrationError);
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for(let registration of registrations) {
+            registration.unregister().then(function(boolean) {
+              console.log('Service Worker unregistered: ', boolean);
             });
+          }
         });
       }
     </script>

@@ -89,7 +89,7 @@ const Reports: React.FC<ReportsProps> = ({ transactions, products }) => {
   // console.log("products", products);
 
   // Filter transactions based on date range
-  const filteredTransactions = transactions.filter(t => {
+  const filteredTransactions = transactions?.filter(t => {
     const transactionDate = new Date(t.created_at);
     const startDate = dateRange.start ? new Date(dateRange.start) : null;
     const endDate = dateRange.end ? new Date(dateRange.end) : null;
@@ -98,12 +98,12 @@ const Reports: React.FC<ReportsProps> = ({ transactions, products }) => {
     if (endDate && transactionDate > endDate) return false;
     
     return true;
-  });
+  }) || [];
 
   const stats = {
     totalSales: filteredTransactions.filter(t => t.type === 'OUT').reduce((acc, t) => acc + t.amount, 0),
-    totalInventoryValue: products.reduce((acc, p) => acc + (p.stock * p.purchasePrice), 0),
-    topSelling: products.sort((a, b) => b.stock - a.stock).slice(0, 3)
+    totalInventoryValue: products?.reduce((acc, p) => acc + (p.stock * p.purchasePrice), 0) || 0,
+    topSelling: products?.sort((a, b) => b.stock - a.stock).slice(0, 3) || []
   };
 
   // Flatten transaction items for table display
@@ -283,7 +283,7 @@ const Reports: React.FC<ReportsProps> = ({ transactions, products }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                  {transactions.length === 0 ? (
+                  {transactions?.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="px-3 py-6 text-center text-slate-500 dark:text-slate-400 text-sm">
                         Tidak ada transaksi

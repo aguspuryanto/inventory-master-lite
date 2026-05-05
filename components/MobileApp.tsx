@@ -96,6 +96,7 @@ export const CardSummary = ({ title, amount, trend, isPositive, icon }: any) => 
 );
 
 export const TransactionList = ({ transactions }: { transactions: Transaction[] }) => {
+  console.log("transactions", transactions);
   const [expandedTxId, setExpandedTxId] = useState<string | null>(null);
 
   const toggleExpand = (id: string) => {
@@ -120,7 +121,7 @@ export const TransactionList = ({ transactions }: { transactions: Transaction[] 
                 {t.type === 'IN' ? <ArrowDownRight size={20} strokeWidth={2.5} /> : <ArrowUpRight size={20} strokeWidth={2.5} />}
               </div>
               <div>
-                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{t.type === 'IN' ? 'Barang Masuk' : 'Penjualan'}</p>
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{t.invoice}</p>
                 <p className="text-xs font-medium text-slate-400 dark:text-slate-500">{new Date(t.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })}</p>
               </div>
             </div>
@@ -145,12 +146,33 @@ export const TransactionList = ({ transactions }: { transactions: Transaction[] 
                     <p className="font-bold text-slate-800 dark:text-slate-100">Rp {formatCurrency(item.subtotal)}</p>
                   </div>
                 ))}
-                <div className="border-t border-slate-200 dark:border-slate-700 pt-2 mt-2">
-                  <div className="flex items-center justify-between text-sm font-bold">
-                    <span className="text-slate-600 dark:text-slate-400">Total:</span>
-                    <span className="text-slate-800 dark:text-slate-100">Rp {formatCurrency(t.amount)}</span>
-                  </div>
-                </div>
+                {/* jika transaction memiliki discount */}
+                {(() => {
+                  const subtotal = t.items?.reduce((sum, item) => sum + item.subtotal, 0) || 0;
+                  return t.discount_amount ? (
+                    <div className="border-t border-slate-200 dark:border-slate-700 pt-2 mt-2 space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-slate-600 dark:text-slate-400">SubTotal:</span>
+                        <span className="text-slate-800 dark:text-slate-100">Rp {formatCurrency(subtotal)}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-red-600 dark:text-red-400">Diskon {t.discount ? '(' + t.discount + '%)' : ''}:</span>
+                        <span className="text-red-600 dark:text-red-400">- Rp {formatCurrency(t.discount_amount)}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm font-bold">
+                        <span className="text-slate-600 dark:text-slate-400">Total:</span>
+                        <span className="text-slate-800 dark:text-slate-100">Rp {formatCurrency(subtotal - (t.discount_amount || 0))}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="border-t border-slate-200 dark:border-slate-700 pt-2 mt-2">
+                      <div className="flex items-center justify-between text-sm font-bold">
+                        <span className="text-slate-600 dark:text-slate-400">Total:</span>
+                        <span className="text-slate-800 dark:text-slate-100">Rp {formatCurrency(t.amount)}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}
@@ -174,6 +196,19 @@ export const TransactionList = ({ transactions }: { transactions: Transaction[] 
 const MobileDashboard = ({ products, transactions }: any) => {
   // console.log(products);
   // console.log(transactions);
+  
+  // Add null checks to prevent TypeError
+  if (!products || !transactions) {
+    return (
+      <div className="p-5 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="text-center py-10">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-slate-500 dark:text-slate-400">Loading data...</p>
+        </div>
+      </div>
+    );
+  }
+  
   const totalStock = products.reduce((acc: number, p: Product) => acc + p.stock, 0);
   const totalSales = transactions.filter((t: Transaction) => t.type === 'OUT').reduce((acc: number, t: Transaction) => acc + t.amount, 0);
   const totalIncoming = transactions.filter((t: Transaction) => t.type === 'IN').reduce((acc: number, t: Transaction) => acc + t.amount, 0);

@@ -68,6 +68,11 @@ const Dashboard: React.FC<DashboardProps> = ({ products, transactions }) => {
   }, []);
 
   const stats = useMemo(() => {
+    // Add null checks to prevent TypeError
+    if (!products || !transactions) {
+      return { totalStock: 0, lowStockCount: 0, incoming: 0, outgoing: 0 };
+    }
+    
     let totalStock = products.reduce((acc, p) => acc + p.stock, 0);
     const lowStockCount = products.filter(p => p.stock <= 5).length;
     
@@ -87,6 +92,16 @@ const Dashboard: React.FC<DashboardProps> = ({ products, transactions }) => {
   }, [products, transactions]);
 
   const chartData: MonthlyStats[] = useMemo(() => {
+    // Add null checks to prevent TypeError
+    if (!transactions) {
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      return months.map(month => ({
+        month,
+        incoming: 0,
+        outgoing: 0
+      }));
+    }
+    
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
     return months.map((month, index) => {
       const filtered = transactions.filter(t => {

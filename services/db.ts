@@ -203,6 +203,7 @@ export const db = {
       description: t.description,
       discount: t.discount,
       discount_amount: t.discount_amount,
+      invoice: t.invoice,
       created_at: t.created_at,
       items: t.transaction_items.map((i: any) => ({
         productId: i.product_id,
@@ -210,7 +211,8 @@ export const db = {
         price: Number(i.price),
         quantity: Number(i.quantity),
         subtotal: Number(i.subtotal)
-      }))
+      })),
+      amount_subtotal: t.transaction_items.reduce((sum: number, item: any) => sum + Number(item.subtotal), 0)
     }));
   },
 
@@ -231,6 +233,7 @@ export const db = {
         description: tx.description,
         discount: tx.discount,
         discount_amount: tx.discount_amount,
+        invoice: tx.invoice,
         store_id: storeId,
         created_at: tx.created_at
       });

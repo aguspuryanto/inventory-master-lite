@@ -3,6 +3,7 @@ import { User, Store, AuthContext as AuthContextType } from '../types';
 import { db } from '../services/db';
 import { supabase } from '../lib/supabase';
 import { generateId } from '../utils';
+import api from '../services/api';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -20,6 +21,7 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [currentStore, setCurrentStore] = useState<Store | null>(null);
   const [userStores, setUserStores] = useState<Store[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,8 +36,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const savedUser = localStorage.getItem('user');
         const savedStore = localStorage.getItem('currentStore');
         const savedStores = localStorage.getItem('userStores');
+        const savedToken = localStorage.getItem('token');
 
-        if (savedUser) {
+        if (!savedToken) {
+          logout();
+          return;
+        }
+
+        if (savedUser && savedToken) {
           const userData = JSON.parse(savedUser);
           setUser(userData);
         }
@@ -49,12 +57,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const storesData = JSON.parse(savedStores);
           setUserStores(storesData);
         }
+
+        if (savedToken) {
+          setToken(savedToken);
+        }
       } catch (error) {
         console.error('Error loading user data:', error);
         // Clear corrupted data
         localStorage.removeItem('user');
         localStorage.removeItem('currentStore');
         localStorage.removeItem('userStores');
+        localStorage.removeItem('token');
       } finally {
         setIsLoading(false);
       }
@@ -81,7 +94,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [currentStore]);
 
   useEffect(() => {
-    if (userStores.length > 0) {
+    if (token) {
+      localStorage.setItem('token', token);
+    } else {
+      localStorage.removeItem('token');
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (userStores && userStores.length > 0) {
       localStorage.setItem('userStores', JSON.stringify(userStores));
       // Auto-select first store if none selected
       if (!currentStore) {
@@ -95,115 +116,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      console.log('Login attempt:', { email, password });
-      // For demo purposes, check against hardcoded credentials
-      // In production, this would use proper authentication
-      if (email === 'admin@example.com' && password === 'admin1234') {
-        // Create demo user
-        const demoUser: User = {
-          id: generateId(),
-          email: 'admin@example.com',
-          full_name: 'Admin Utama',
-          phone: '+62812345678',
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
+      // console.log('Login attempt:', { email, password });
+      const response = await api.login(email, password);
+      // console.log('Login response:', response);
 
-        // Create demo store
-        const demoStore: Store = {
-          id: generateId(),
-          name: 'Toko Demo',
-          slug: 'toko-demo',
-          description: 'Toko demo untuk testing',
-          address: 'Jl. Demo No. 123, Jakarta',
-          phone: '(021) 12345678',
-          email: 'admin@example.com',
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-
-        setUser(demoUser);
-        setCurrentStore(demoStore);
-        setUserStores([demoStore]);
-        return;
-      } else {
-        // Try Supabase Auth first
-        let userData = null;
-        let stores = [];
-        
-        if (supabase) {
-          try {
-            console.log('Trying Supabase Auth login...');
-            const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-              email,
-              password
-            });
-            
-            if (authError) {
-              console.log('Supabase Auth failed:', authError.message);
-            } else if (authData.user) {
-              console.log('Supabase Auth success:', authData.user);
-              
-              // Check if user exists in public.users table, create if not
-              userData = await db.getUserByEmail(email);
-              if (!userData) {
-                console.log('Creating user in public.users table from Supabase Auth...');
-                userData = await db.createUser({
-                  id: authData.user.id,
-                  email: authData.user.email,
-                  full_name: authData.user.user_metadata?.name || authData.user.email?.split('@')[0] || '',
-                  phone: '',
-                  is_active: true,
-                  created_at: authData.user.created_at,
-                  updated_at: new Date().toISOString()
-                });
-              }
-              
-              // Get stores for this user
-              console.log('Getting stores for user:', userData.id);
-              stores = await db.getUserStores(userData.id);
-            }
-          } catch (authErr) {
-            console.log('Supabase Auth error:', authErr);
-          }
-        }
-        
-        // If Supabase Auth failed or no user found, try public.users table
-        if (!userData) {
-          // console.log('Trying public.users table...');
-          userData = await db.getUserByEmail(email);
-          // console.log('User data from database:', userData);
-          
-          if (!userData) {
-            // console.log('User not found in database, checking if registration worked...');
-            // Let's check if there are any users in the database
-            if (supabase) {
-              const { data: allUsers, error: allUsersError } = await supabase
-                .from('users')
-                .select('email, full_name, created_at')
-                .limit(5);
-              // console.log('All users in database:', allUsers);
-              // console.log('All users error:', allUsersError);
-            }
-            throw new Error('User not found. Registration may have failed.');
-          }
-          
-          // In production, verify password hash here
-          // console.log('Getting stores for user ID:', userData.id);
-          stores = await db.getUserStores(userData.id);
-          // console.log('User stores from database:', stores);
-        }
-        
-        setUser(userData);
-        setUserStores(stores);
-        
-        // Set first store as current if none selected
-        if (stores.length > 0 && !currentStore) {
-          setCurrentStore(stores[0]);
-        }
-      }
+      // Set user data from API response
+      setUser(response.user);
+      setToken(response.token);
+      setCurrentStore(response.store);
+      setUserStores(response.userStores);
     } catch (error) {
       throw error;
     } finally {
@@ -213,11 +134,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = () => {
     setUser(null);
+    setToken(null);
     setCurrentStore(null);
     setUserStores([]);
     
     // Clear localStorage
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
     localStorage.removeItem('currentStore');
     localStorage.removeItem('userStores');
   };
@@ -225,7 +148,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const registerStore = async (storeData: Partial<Store>, userData: Partial<User>, password: string) => {
     setIsLoading(true);
     try {
-      console.log('Starting store registration...', { storeData, userData });
+      // console.log('Starting store registration...', { storeData, userData });
       
       // Check if Supabase is available
       if (!supabase) {
@@ -233,7 +156,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       // Check if email already exists
-      console.log('Checking if email exists:', userData.email);
+      // console.log('Checking if email exists:', userData.email);
       const { data: existingUser, error: checkError } = await supabase
         .from('users')
         .select('email')
@@ -344,6 +267,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value: AuthContextType = {
     user,
+    token,
     currentStore,
     userStores,
     isLoading,
