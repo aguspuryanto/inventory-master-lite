@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, NavLink, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { 
   Home, Package, ShoppingCart, History, User, 
   Bell, Moon, Sun, ArrowUpRight, ArrowDownRight, 
@@ -352,9 +352,11 @@ const MobilePOS = ({ products, onCheckout, cart, setCart }: any) => {
       <div className="grid grid-cols-2 gap-3 pb-32">
         {filtered.map((p: Product) => (
           <div key={p.id} onClick={() => addToCart(p)} className="bg-white dark:bg-slate-800 p-4 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700/50 active:scale-95 transition-transform cursor-pointer">
-            <div className="w-full aspect-square rounded-2xl bg-slate-50 dark:bg-slate-700/50 flex items-center justify-center mb-3">
-              <Package className="text-slate-300 dark:text-slate-500" size={32} />
-            </div>
+            {p.image_url ? (
+              <div className="w-full aspect-square rounded-2xl bg-slate-50 dark:bg-slate-700/50 flex items-center justify-center mb-3">
+                <img src={p.image_url} alt={p.name} className="w-full h-full object-cover rounded-2xl" />
+              </div>
+            ) : null}
             <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xs line-clamp-2 mb-1">{p.name}</h4>
             <p className="text-sm font-black text-purple-600 dark:text-purple-400">Rp {formatCurrency(p.sellingPrice)}</p>
           </div>
@@ -626,9 +628,12 @@ const MobileApp: React.FC<MobileAppProps> = ({
           <Route path="/products" element={<MobileProducts products={products} setProducts={setProducts} onStockEntry={handleAddTransaction} />} />
           <Route path="/pos" element={<MobilePOS products={products} onCheckout={handleAddTransaction} cart={cart} setCart={setCart} />} />
           <Route path="/transactions" element={<div className="p-5"><TransactionList transactions={transactions} /></div>} />
+          <Route path="/reports" element={<div className="p-5"><p className="text-center text-slate-500 dark:text-slate-400">Laporan tidak tersedia di mobile view</p></div>} />
+          <Route path="/user-management" element={<div className="p-5"><p className="text-center text-slate-500 dark:text-slate-400">User Management tidak tersedia di mobile view</p></div>} />
+          <Route path="/subscribe" element={<div className="p-5"><p className="text-center text-slate-500 dark:text-slate-400">Subscribe tidak tersedia di mobile view</p></div>} />
+          <Route path="/register" element={<div className="p-5"><p className="text-center text-slate-500 dark:text-slate-400">Register tidak tersedia di mobile view</p></div>} />
           <Route path="/settings" element={<MobileSettings session={session} handleLogout={handleLogout} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} storeSettings={currentStore} />} />
-          {/* Fallback for reports route if accessed */}
-          <Route path="/reports" element={<MobileSettings session={session} handleLogout={handleLogout} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} storeSettings={currentStore} />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
 

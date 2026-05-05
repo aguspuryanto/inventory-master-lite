@@ -8,6 +8,7 @@ export interface Product {
   sellingPrice: number;
   stock: number;
   category: string;
+  image_url?: string;
 }
 
 export interface TransactionItem {

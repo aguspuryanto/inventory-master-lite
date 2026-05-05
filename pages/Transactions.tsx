@@ -20,6 +20,7 @@ interface TransactionsProps {
 }
 
 const Transactions: React.FC<TransactionsProps> = ({ transactions }) => {
+  // console.log("transactions", transactions);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'ALL' | 'IN' | 'OUT'>('ALL');
   const [expandedTxId, setExpandedTxId] = useState<string | null>(null);
@@ -190,19 +191,22 @@ const Transactions: React.FC<TransactionsProps> = ({ transactions }) => {
                                 )} */}
                                 
                                 {/* jika transaction memiliki discount */}
-                                {t.discount_amount && (
-                                  // Tampilkan SubTotal & Diskon
-                                  <>
-                                    <tr>
-                                      <td colSpan={3} className="pt-2 text-right font-bold text-slate-600 dark:text-slate-400">SubTotal:</td>
-                                      <td className="pt-2 text-right font-bold text-slate-800 dark:text-slate-100">Rp {formatCurrency(t.amount + t.discount_amount)}</td>
-                                    </tr>
-                                    <tr>
-                                      <td colSpan={3} className="pt-2 text-right font-bold text-slate-600 dark:text-slate-400">Diskon {t.discount ? '(' + t.discount + '%)' : ''}:</td>
-                                      <td className="pt-2 text-right font-bold text-red-600 dark:text-red-400">- Rp {formatCurrency(t.discount_amount)}</td>
-                                    </tr>
-                                  </>
-                                )}
+                                {(() => {
+                                  const subtotal = t.items?.reduce((sum, item) => sum + item.subtotal, 0) || 0;
+                                  // t.discount_amount = t.discount * subtotal / 100 || 0;
+                                  return t.discount_amount && (
+                                    <>
+                                      <tr>
+                                        <td colSpan={3} className="pt-2 text-right font-bold text-slate-600 dark:text-slate-400">SubTotal:</td>
+                                        <td className="pt-2 text-right font-bold text-slate-800 dark:text-slate-100">Rp {formatCurrency(subtotal)}</td>
+                                      </tr>
+                                      <tr>
+                                        <td colSpan={3} className="pt-2 text-right font-bold text-slate-600 dark:text-slate-400">Diskon {t.discount ? '(' + t.discount + '%)' : ''}:</td>
+                                        <td className="pt-2 text-right font-bold text-red-600 dark:text-red-400">- Rp {formatCurrency(t.discount_amount)}</td>
+                                      </tr>
+                                    </>
+                                  );
+                                })()}
                               </tbody>
                               <tfoot className="border-t border-slate-100 dark:border-slate-700">
                                 <tr>
